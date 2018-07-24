@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <title>Piazza Role Discovery</title>
+        <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    </head>
+
+    <div class="container">
+        <div class="jumbotron">
+            <h1 class="display-4">Piazza role discovery</h1>
+            <p class="lead">This application uses a probabilistic user behavior model to uncover behavior patterns (roles) in your Piazza courses.
+            <hr class="my-4">
+            <p>By logging in, you will be able to select a course on Piazza to crawl and extract behavioral patterns from. You can learn things about the individual roles students play on your course's Piazza, and to what extent each individual exhibits those roles.</p>
+            <form action="/login" method="post">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input name="email" type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Email for Piazza account">
+                    <small id="emailHelp" class="form-text text-muted">This is used to log in to Piazza for crawling courses; this will not be shared with anyone.</small>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input name="password" type="password" class="form-control" id="password" aria-describedby="passwordHelp" placeholder="Password for Piazza account">
+                    <small id="passwordHelp" class="form-text text-muted">This is used to log in to Piazza for crawling courses; this information is not stored in any of our databases.</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Log in</button>
+            </form>
+        </div>
+    </div>
+</html>

@@ -5,6 +5,10 @@ name = "pypi"
 
 [packages]
 piazza-api = {path = "./vendor/piazza-api"}
+flask = "*"
+flask-sqlalchemy = "*"
+"psycopg2" = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
