@@ -10,6 +10,15 @@
             <p class="lead">This application uses a probabilistic user behavior model to uncover behavior patterns (roles) in your Piazza courses.
             <hr class="my-4">
             <p>By logging in, you will be able to select a course on Piazza to crawl and extract behavioral patterns from. You can learn things about the individual roles students play on your course's Piazza, and to what extent each individual exhibits those roles.</p>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }}" role="alert">
+                      {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
             <form action="/login" method="post">
                 <div class="form-group">
                     <label for="email">Email</label>

@@ -13,7 +13,7 @@ services:
       - postgres
   celery:
     build: 'web'
-    command: 'pipenv run celery -A app.celery worker'
+    command: 'pipenv run celery -A roles.app.celery worker'
     depends_on:
       - rabbitmq
       - postgres
