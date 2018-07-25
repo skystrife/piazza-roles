@@ -1,15 +1,13 @@
-from dotenv import load_dotenv
 from flask import Flask, redirect, render_template, request, session, url_for
+from flask_dotenv import DotEnv
 import piazza_api
 import requests
 import os
 
 app = Flask(__name__)
 
-APP_ROOT = os.path.dirname(__file__)
-dotenv_path = os.path.join(APP_ROOT, '.env')
-load_dotenv(dotenv_path)
-app.secret_key = os.environ.get('SECRET_KEY')
+env = DotEnv(app)
+celery = make_celery(app)
 
 @app.route('/')
 def index():
