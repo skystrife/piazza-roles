@@ -1,0 +1,35 @@
+version: '3'
+services:
+  web:
+    build: 'web'
+    ports:
+      - "8000:8000"
+    links:
+      - celery
+      - rabbitmq
+      - postgres
+    depends_on:
+      - celery
+      - postgres
+  celery:
+    build: 'web'
+    command: 'pipenv run celery -A app.celery worker'
+    depends_on:
+      - rabbitmq
+      - postgres
+    links:
+      - rabbitmq
+      - postgres
+  rabbitmq:
+    image: rabbitmq:3
+    volumes:
+      - mqdata:/var/lib/rabbitmq
+  postgres:
+    image: postgres:10
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
+  mqdata:
