@@ -1,11 +1,28 @@
+from celery import Celery
 from flask import Flask, redirect, render_template, request, session, url_for
 from flask_dotenv import DotEnv
+from flask_sqlalchemy import SQLAlchemy
 import piazza_api
 import requests
 import os
 
-app = Flask(__name__)
+def make_celery(app):
+    celery = Celery(
+        app.import_name,
+        backend=app.config['CELERY_RESULT_BACKEND'],
+        broker=app.config['CELERY_BROKER_URL']
+    )
+    celery.conf.update(app.config)
 
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+    return celery
+
+app = Flask(__name__)
 env = DotEnv(app)
 celery = make_celery(app)
 
