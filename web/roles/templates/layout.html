@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <title>{% block title %}{% endblock %} - Piazza Role Discovery</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    </head>
+
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                {% for breadcrumb in breadcrumbs %}
+                {% if loop.last %}
+                <li class="breadcrumb-item active" aria-current="page">
+                    {{ breadcrumb.text }}
+                </li>
+                {% else %}
+                <li class="breadcrumb-item">
+                    <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                <li class="ml-auto">
+                    <a href="/logout">Log out</a>
+                </li>
+            </ol>
+        </nav>
+        {% block content %}{% endblock %}
+    </div>
+</html>

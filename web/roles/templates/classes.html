@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+{% block title %}Choose a class{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg">
+        <h1>Select a class</h1>
+    </div>
+</div>
+<div class="row">
+    <div class="col order-first order-md-last">
+        <p>In order to crawl the data from your Piazza course, we need to have
+        instructor-level privileges in order to associate actions to users.
+        <strong>If your class allows full anonymity (anonymous to instructors),
+        role discovery may not work</strong> as there is no way to distinguish
+        between two different fully anonymous users. If you allow students to
+        be anonymous only to classmates, things should work just fine.</p>
+    </div>
+    <div class="col">
+        {% if classes %}
+        <div class="list-group">
+            {% for cls in classes %}
+            <a href="{{ url_for('view_class', nid=cls.id) }}" class="list-group-item list-group-item-action flex-column align-items-start">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ cls.number }}</h5>
+                    <small class="text-muted">{{ cls.term }}</small>
+                </div>
+                <p class="mb-1">{{ cls.name }}</p>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>You don't appear to have any classes you are an instructor for...</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
