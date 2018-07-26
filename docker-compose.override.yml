@@ -3,3 +3,6 @@ services:
   web:
     volumes:
       - ./web:/srv/web
+  postgres:
+    ports:
+      - '5432:5432'

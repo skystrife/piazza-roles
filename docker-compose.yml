@@ -4,22 +4,9 @@ services:
     build: 'web'
     ports:
       - "8000:8000"
-    links:
-      - celery
-      - rabbitmq
-      - postgres
-    depends_on:
-      - celery
-      - postgres
   celery:
     build: 'web'
     command: 'pipenv run celery -A roles.app.celery worker'
-    depends_on:
-      - rabbitmq
-      - postgres
-    links:
-      - rabbitmq
-      - postgres
   rabbitmq:
     image: rabbitmq:3
     volumes:
