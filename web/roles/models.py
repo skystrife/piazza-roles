@@ -123,7 +123,7 @@ class Action(db.Model):
     uid = db.Column(db.String(120), nullable=False, index=True)
     type_id = db.Column(db.Integer, nullable=False)
     time = db.Column(db.DateTime, nullable=False)
-    content = db.Column(db.Text, lazy=True)
+    content = db.deferred(db.Column(db.Text))
 
     def type(self):
         return ActionType(self.type_id)
