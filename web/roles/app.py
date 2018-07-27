@@ -159,3 +159,11 @@ def class_name_dlc(*args, **kwargs):
     app, '.classes.network_id', '', dynamic_list_constructor=class_name_dlc)
 def view_class(network_id):
     return render_template('class.html', network=g.network)
+
+
+@app.route('/class/<network_id>/crawl')
+@login_required
+@network_required
+@register_breadcrumb(app, '.classes.network_id.crawl', 'Crawl')
+def crawl_class(network_id):
+    return render_template('crawl.html', network=g.network)
