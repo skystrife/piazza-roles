@@ -8,13 +8,13 @@ piazza-api = {path = "./vendor/piazza-api"}
 flask = "*"
 flask-sqlalchemy = "*"
 celery = "*"
-flask-dotenv = "*"
 gunicorn = "*"
 requests = "*"
 six = "*"
 flask-breadcrumbs = "*"
 pgcli = "*"
 "psycopg2-binary" = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

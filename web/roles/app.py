@@ -1,7 +1,6 @@
 from flask import (abort, Blueprint, flash, Flask, g, redirect,
                    render_template, request, session, url_for)
 from flask_breadcrumbs import Breadcrumbs, register_breadcrumb
-from flask_dotenv import DotEnv
 from flask_sqlalchemy import SQLAlchemy
 import functools
 import piazza_api
@@ -12,7 +11,6 @@ from .models import *
 from .tasks import *
 
 app = Flask(__name__)
-env = DotEnv(app)
 db.init_app(app)
 Breadcrumbs(app)
 configure_celery(app)
