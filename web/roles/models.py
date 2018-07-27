@@ -25,7 +25,7 @@ class Network(db.Model):
         'User',
         secondary=network_user,
         lazy='subquery',
-        backref=db.backref('users', lazy=True))
+        backref=db.backref('networks', lazy=True))
     crawl = db.relationship('Crawl', backref='network', uselist=False)
 
     def __repr(self):
@@ -36,11 +36,6 @@ class Network(db.Model):
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    networks = db.relationship(
-        'Network',
-        secondary=network_user,
-        lazy='subquery',
-        backref=db.backref('networks', lazy=True))
 
     def __repr__(self):
         return "<User: {}>".format(self.email)
