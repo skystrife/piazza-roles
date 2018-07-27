@@ -2,6 +2,7 @@ from flask import (abort, Blueprint, flash, Flask, g, redirect,
                    render_template, request, session, url_for)
 from flask_breadcrumbs import Breadcrumbs, register_breadcrumb
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import functools
 import piazza_api
 import requests
@@ -21,6 +22,7 @@ for envvar in envvars:
     app.config[envvar] = os.getenv(envvar)
 
 db.init_app(app)
+migrate = Migrate(app, db)
 Breadcrumbs(app)
 configure_celery(app)
 
