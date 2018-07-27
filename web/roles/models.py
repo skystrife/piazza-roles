@@ -26,7 +26,8 @@ class Network(db.Model):
         secondary=network_user,
         lazy='subquery',
         backref=db.backref('networks', lazy=True))
-    crawl = db.relationship('Crawl', backref='network', uselist=False)
+    crawl = db.relationship(
+        'Crawl', backref='network', cascade='all,delete', uselist=False)
 
     def __repr(self):
         return "<Network: {}:{} ({} {})>".format(self.id, self.nid,
@@ -48,7 +49,9 @@ class Crawl(db.Model):
     finished = db.Column(db.Boolean, default=False)
     task_id = db.Column(db.String(120), index=True)
     errors = db.relationship(
-        'CrawlError', backref=db.backref('crawl', lazy=True))
+        'CrawlError',
+        backref=db.backref('crawl', lazy=True),
+        cascade='all,delete,delete-orphan')
 
     def __repr__(self):
         return "<Crawl: {}>".format(self.id)
@@ -119,7 +122,8 @@ class Action(db.Model):
     network_id = db.Column(
         db.Integer, db.ForeignKey('network.id'), nullable=False)
     network = db.relationship(
-        'Network', backref=db.backref('actions', lazy=True))
+        'Network',
+        backref=db.backref('actions', lazy=True, cascade="all,delete"))
     uid = db.Column(db.String(120), nullable=False, index=True)
     type_id = db.Column(db.Integer, nullable=False)
     time = db.Column(db.DateTime, nullable=False)
