@@ -35,12 +35,24 @@ def load_user():
 
 def login_required(view):
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(*args, **kwargs):
         if g.user is None:
             flash('You are not logged in.', 'danger')
-            return redirect(url_for('index'))
+            return redirect(url_for('.index'))
 
-        return view(**kwargs)
+        return view(*args, **kwargs)
+
+    return wrapped_view
+
+
+def network_required(view):
+    @functools.wraps(view)
+    def wrapped_view(network_id, *args, **kwargs):
+        g.network = Network.query.get(network_id)
+        if g.network is None or not g.network in g.user.networks:
+            abort(404)
+
+        return view(*args, network_id=network_id, **kwargs)
 
     return wrapped_view
 
@@ -128,23 +140,20 @@ def classes():
 
 
 def class_name_dlc(*args, **kwargs):
-    nid = request.view_args['id']
-    net = Network.query.get(nid)
+    network_id = request.view_args['network_id']
+    net = Network.query.get(network_id)
     if net is None:
         return []
     return [{
         'text': "{} ({})".format(net.number, net.term),
-        'url': url_for('class', id=nid)
+        'url': url_for('.view_class', network_id=network_id)
     }]
 
 
-@app.route('/class/<nid>')
+@app.route('/class/<network_id>')
 @login_required
+@network_required
 @register_breadcrumb(
-    app, '.class.nid', '', dynamic_list_constructor=class_name_dlc)
-def view_class(nid):
-    net = Network.query.get(nid)
-    if net is None:
-        flash('We could not find that class', 'danger')
-        return redirect(url_for('classes'))
-    return render_template('class.html', network=net)
+    app, '.classes.network_id', '', dynamic_list_constructor=class_name_dlc)
+def view_class(network_id):
+    return render_template('class.html', network=g.network)

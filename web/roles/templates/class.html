@@ -1,0 +1,31 @@
+{% extends 'layout.html' %}
+{% block title %}{{ network.number }} ({{ network.term }}){% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ network.number }}: {{ network.name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{ network.term }}</h6>
+                <div class="list-group list-group-flush">
+                    {% if not network.crawl %}
+                    <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Start a crawl</a>
+                    <a href="#" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
+                    {% elif not network.crawl.finished %}
+                    <!-- TODO: figure out how to display progress -->
+                    <a href="analyze" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
+                    {% else %}
+                    <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Re-crawl</a>
+                    <a href="analyze" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="list-group">
+        </div>
+    </div>
+</div>
+{% endblock %}
