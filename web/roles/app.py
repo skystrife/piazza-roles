@@ -63,7 +63,7 @@ def network_required(view):
 @register_breadcrumb(app, '.', 'Home')
 def index():
     if g.piazza is not None:
-        return redirect(url_for('classes'))
+        return redirect(url_for('.classes'))
     return render_template('index.html')
 
 
@@ -105,17 +105,17 @@ def login():
 
         db.session.commit()
 
-        return redirect(url_for('classes'))
+        return redirect(url_for('.classes'))
     except piazza_api.exceptions.AuthenticationError:
         flash('Email or password incorrect', 'danger')
         session.pop('uid', None)
         session.pop('piazza_jar', None)
-        return redirect(url_for('index'))
+        return redirect(url_for('.index'))
     except:
         flash('Could not communicate with Piazza API', 'danger')
         session.pop('uid', None)
         session.pop('piazza_jar', None)
-        return redirect(url_for('index'))
+        return redirect(url_for('.index'))
 
 
 @app.route('/logout')
@@ -123,7 +123,7 @@ def logout():
     session.pop('uid', None)
     session.pop('piazza_jar', None)
     flash('You were successfully logged out.', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('.index'))
 
 
 @app.route('/classes')
