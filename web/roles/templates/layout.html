@@ -1,28 +1,33 @@
-<html>
+<!doctype html>
+<html lang="en">
     <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <title>{% block title %}{% endblock %} - Piazza Role Discovery</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     </head>
 
-    <div class="container">
-        <nav class="mt-2" aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                {% for breadcrumb in breadcrumbs %}
-                {% if loop.last %}
-                <li class="breadcrumb-item active" aria-current="page">
-                    {{ breadcrumb.text }}
-                </li>
-                {% else %}
-                <li class="breadcrumb-item">
-                    <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>
-                </li>
-                {% endif %}
-                {% endfor %}
-                <li class="ml-auto">
-                    <a href="/logout">Log out</a>
-                </li>
-            </ol>
-        </nav>
-        {% block content %}{% endblock %}
-    </div>
+    <body>
+        <div class="container">
+            <nav class="mt-2" aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    {% for breadcrumb in breadcrumbs %}
+                    {% if loop.last %}
+                    <li class="breadcrumb-item active" aria-current="page">
+                        {{ breadcrumb.text }}
+                    </li>
+                    {% else %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    <li class="ml-auto">
+                        <a href="/logout">Log out</a>
+                    </li>
+                </ol>
+            </nav>
+            {% block content %}{% endblock %}
+        </div>
+    </body>
 </html>
