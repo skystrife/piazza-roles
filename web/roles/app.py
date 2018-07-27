@@ -170,9 +170,29 @@ def view_class(network_id):
     return render_template('class.html', network=g.network)
 
 
-@app.route('/class/<network_id>/crawl')
+@app.route('/class/<network_id>/crawl', methods=['GET'])
 @login_required
 @network_required
 @register_breadcrumb(app, '.classes.network_id.crawl', 'Crawl')
 def crawl_class(network_id):
+    return render_template('crawl.html', network=g.network)
+
+
+@app.route('/class/<network_id>/crawl', methods=['POST'])
+@login_required
+@network_required
+@register_breadcrumb(app, '.classes.network_id.crawl', 'Crawl')
+def start_crawl_class(network_id):
+    if g.network.crawl:
+        db.session.delete(g.network.crawl)
+        Action.query.filter_by(network_id=g.network.id).delete()
+
+    crawl = Crawl(network=g.network)
+    db.session.add(crawl)
+    db.session.commit()
+
+    task = crawl_course.delay(crawl.id, session.get('piazza_jar'))
+    crawl.task_id = task.id
+    db.session.commit()
+
     return render_template('crawl.html', network=g.network)

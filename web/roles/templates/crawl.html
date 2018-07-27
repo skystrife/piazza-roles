@@ -1,0 +1,60 @@
+{% extends 'layout.html' %}
+{% block title %}Crawling {{ network.number }} ({{ network.term }}){% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <div class="card" id="CrawlCard">
+            <h5 class="card-header">
+                {{ network.number }} ({{ network.term }}): {{ network.name }}
+            </h5>
+            <div class="card-body">
+                {% if not network.crawl %}
+                <h5 class="card-title">Start a crawl?</h5>
+                <p class="card-text"> Crawling a course can take a long time. When you press the button below to start a crawl, we will begin crawling <strong>{{ network.number }}</strong> from {{ network.term }} in the background. You will be able to see the progress of the crawl on this page once it has been started.</p>
+                <form method="post">
+                    <button type="submit" class="btn btn-primary">Start crawl</button>
+                </form>
+                {% else %}
+                <h5 class="card-title">
+                    {% if network.crawl.finished %}
+                    A crawl has already been completed.
+                    {% else %}
+                    A crawl is currently in progress.
+                    {% endif %}
+                </h5>
+
+                <div class="progress mb-2">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+
+                <div id="CrawlErrors">
+                    {% if network.crawl.errors %}
+                    <p class="card-text">
+                        {% if len(network.crawl.errors) == 1 %}
+                        There was an error encountered during the crawl.
+                        {% else %}
+                        There were some errors encountered during the crawl.
+                        {% endif %}
+                    </p>
+                    {% for error in network.crawl.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error.message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                <form method="post">
+                    {% if network.crawl.finished %}
+                    <p class="card-text">If you would like to retry the crawl, click the "Restart crawl" button below.</p>
+                    <button type="submit" class="btn btn-primary">Restart crawl</button>
+                    {% else %}
+                    <button type="submit" class="btn btn-primary" disabled>Start crawl</button>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
