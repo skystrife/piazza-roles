@@ -6,7 +6,7 @@ services:
       - "8000:8000"
   celery:
     build: 'web'
-    command: 'pipenv run celery -A roles.app.celery worker'
+    command: 'pipenv run watchmedo auto-restart -d roles/ -p "*.py" -- celery -A roles.app.celery worker'
   rabbitmq:
     image: rabbitmq:3
     volumes:

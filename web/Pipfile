@@ -16,6 +16,7 @@ pgcli = "*"
 "psycopg2-binary" = "*"
 python-dotenv = "*"
 flask-migrate = "*"
+watchdog = "*"
 
 [dev-packages]
 
