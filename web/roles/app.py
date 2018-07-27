@@ -11,6 +11,15 @@ from .models import *
 from .tasks import *
 
 app = Flask(__name__)
+
+envvars = [
+    'SECRET_KEY', 'FLASK_ENV', 'SQLALCHEMY_DATABASE_URI',
+    'SQLALCHEMY_TRACK_MODIFICATIONS', 'CELERY_RESULT_BACKEND',
+    'CELERY_BROKER_URL'
+]
+for envvar in envvars:
+    app.config[envvar] = os.getenv(envvar)
+
 db.init_app(app)
 Breadcrumbs(app)
 configure_celery(app)
