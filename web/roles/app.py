@@ -69,7 +69,7 @@ def network_required(view):
 @app.route('/')
 @register_breadcrumb(app, '.', 'Home')
 def index():
-    if g.piazza is not None:
+    if g.user and g.piazza:
         return redirect(url_for('.classes'))
     return render_template('index.html')
 
