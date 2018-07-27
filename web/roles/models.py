@@ -24,6 +24,7 @@ class Network(db.Model):
         secondary=network_user,
         lazy='subquery',
         backref=db.backref('users', lazy=True))
+    crawl = db.relationship('Crawl', backref='network', uselist=False)
 
     def __init__(self, nid, number, name, term):
         self.nid = nid
@@ -50,3 +51,12 @@ class User(db.Model):
 
     def __repr__(self):
         return "<User: {}>".format(self.email)
+
+
+class Crawl(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    network_id = db.Column(
+        db.Integer, db.ForeignKey('network.id'), nullable=False)
+    finished = db.Column(db.Boolean, default=False)
+    task_id = db.Column(
+        db.String(120), index=True)
