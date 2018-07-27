@@ -1,7 +1,5 @@
-from .models import *
-from .celery import make_celery
-from flask import (Flask, flash, g, redirect, render_template, request,
-                   session, url_for)
+from flask import (abort, Blueprint, flash, Flask, g, redirect,
+                   render_template, request, session, url_for)
 from flask_breadcrumbs import Breadcrumbs, register_breadcrumb
 from flask_dotenv import DotEnv
 from flask_sqlalchemy import SQLAlchemy
@@ -9,13 +7,15 @@ import functools
 import piazza_api
 import requests
 from operator import attrgetter
-import os
+
+from .models import *
+from .tasks import *
 
 app = Flask(__name__)
 env = DotEnv(app)
 db.init_app(app)
 Breadcrumbs(app)
-celery = make_celery(app)
+configure_celery(app)
 
 
 @app.before_request
