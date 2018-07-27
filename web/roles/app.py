@@ -24,6 +24,8 @@ def load_user():
     piazza_jar = session.get('piazza_jar')
 
     if not uid or not piazza_jar:
+        session.pop('uid', None)
+        session.pop('piazza_jar', None)
         g.piazza = None
         g.user = None
     else:
