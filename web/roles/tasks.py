@@ -1,11 +1,10 @@
 from celery import Celery, current_task
 from celery.result import AsyncResult
-from flask_socketio import SocketIO
 import os
 import time
 
 from .models import *
-from .websockets import socketio_opts
+from .websockets import socketio
 
 celery = Celery(
     __name__,
@@ -26,7 +25,6 @@ def configure_celery(app):
 
 @celery.task(bind=True)
 def crawl_course(self, crawl_id, piazza_jar):
-    socketio = SocketIO(**socketio_opts, async_mode='threading')
     crawl = Crawl.query.get(crawl_id)
     print("Crawling course: {}".format(crawl.network))
 
