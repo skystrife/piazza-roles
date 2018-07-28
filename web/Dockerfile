@@ -12,4 +12,4 @@ WORKDIR /srv/web
 RUN pipenv install
 COPY --chown=web:web . /srv/web
 EXPOSE 8000
-CMD ["pipenv", "run", "gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--reload", "roles.app:app"]
+CMD ["pipenv", "run", "gunicorn", "--bind", "0.0.0.0:8000", "--worker-class", "eventlet", "--workers", "1", "--reload", "roles.wsgi:app"]

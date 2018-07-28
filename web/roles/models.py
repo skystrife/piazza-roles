@@ -1,3 +1,4 @@
+from celery.result import AsyncResult
 from datetime import datetime
 from enum import IntEnum, auto
 from flask_sqlalchemy import SQLAlchemy
@@ -55,6 +56,17 @@ class Crawl(db.Model):
 
     def __repr__(self):
         return "<Crawl: {}>".format(self.id)
+
+    def progress(self):
+        if self.finished:
+            return 100
+        try:
+            result = AsyncResult(self.task_id)
+            if result.state == 'PROGRESS':
+                return result.info['progress']
+        except:
+            pass
+        return 0
 
 
 class CrawlError(db.Model):

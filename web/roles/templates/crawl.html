@@ -25,7 +25,7 @@
                 </h5>
 
                 <div class="progress mb-2">
-                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress-bar" role="progressbar" style="width: {{ network.crawl.progress() }}%;" aria-valuenow="{{ network.crawl.progress() }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
 
                 <div id="CrawlErrors">
@@ -57,4 +57,10 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/jquery-3.3.1.slim.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/socket.io.slim.js') }}"></script>
+<script src="{{ url_for('static', filename='js/crawl.js') }}"></script>
 {% endblock %}

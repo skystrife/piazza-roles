@@ -4,13 +4,18 @@ services:
     build: 'web'
     ports:
       - "8000:8000"
+    depends_on:
+      - redis
+      - postgres
+      - celery
   celery:
     build: 'web'
-    command: 'pipenv run watchmedo auto-restart -d roles/ -p "*.py" -- celery -A roles.app.celery worker'
-  rabbitmq:
-    image: rabbitmq:3
-    volumes:
-      - mqdata:/var/lib/rabbitmq
+    command: 'pipenv run watchmedo auto-restart -d roles/ -p "*.py" -- celery -A roles.celery.celery worker'
+    depends_on:
+      - redis
+      - postgres
+  redis:
+    image: redis:4
   postgres:
     image: postgres:10
     env_file:
@@ -19,4 +24,3 @@ services:
       - pgdata:/var/lib/postgresql/data
 volumes:
   pgdata:
-  mqdata:
