@@ -7,7 +7,9 @@ $(function() {
 
         socket.emit('subscribe', {'id': +network_id});
         socket.on('progress', function(data) {
-            $('#CrawlCard .progress-bar').width(data.progress + '%');
+            $('#CrawlCard .progress-bar')
+                .width(data.progress + '%')
+                .attr('aria-valuenow', data.progress);
         });
     });
 });
