@@ -1,6 +1,9 @@
 from celery import Celery, current_task
 from celery.result import AsyncResult
 import os
+import piazza_api
+import random
+import requests
 import time
 
 from .models import *
@@ -25,17 +28,37 @@ def configure_celery(app):
 
 @celery.task(bind=True)
 def crawl_course(self, crawl_id, piazza_jar):
-    crawl = Crawl.query.get(crawl_id)
-    print("Crawling course: {}".format(crawl.network))
+    CRAWL_DELAY = 0.5
+    def sleep():
+        sleep_time = CRAWL_DELAY * random.uniform(0.5, 1.5)
+        time.sleep(sleep_time)
 
-    for i in range(1, 101):
-        print("Progress: {}%".format(i))
+    def update_progress(current, total):
+        progress = 100 * float(current) / total
         socketio.emit(
-            'progress', {'progress': i},
+            'progress', {'progress': progress},
             namespace='/network',
             room=crawl.network_id)
-        self.update_state(state='PROGRESS', meta={'progress': i})
-        time.sleep(1)
+        self.update_state(state='PROGRESS', meta={'progress': progress})
+
+
+    crawl = Crawl.query.get(crawl_id)
+    print("Crawling {}".format(crawl.network))
+
+    piazza_rpc = piazza_api.rpc.PiazzaRPC()
+    piazza_rpc.cookies = requests.utils.cookiejar_from_dict(piazza_jar)
+    piazza = piazza_api.Piazza(piazza_rpc)
+    network = piazza.network(crawl.network.nid)
+    feed = network.get_feed(limit=999999, offset=0)
+
+    total_posts = len(feed['feed'])
+    for idx, feed_item in enumerate(feed['feed']):
+        sleep()
+        post = network.get_post(feed_item['id'])
+        print(post)
+        crawl.create_actions_from_post(post)
+        db.session.commit()
+        update_progress(idx, total_posts)
 
     crawl.finished = True
     db.session.commit()
