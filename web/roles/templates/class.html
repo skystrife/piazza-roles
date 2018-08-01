@@ -11,13 +11,14 @@
                 <div class="list-group list-group-flush">
                     {% if not network.crawl %}
                     <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Start a crawl</a>
-                    <a href="#" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
+                    <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
                     {% elif not network.crawl.finished %}
-                    <!-- TODO: figure out how to display progress -->
+                    <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">View crawl <span class="badge badge-light">{{ network.crawl.progress() | round(1) }}%</span></a>
                     <a href="analyze" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
+                    <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
                     {% else %}
                     <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Re-crawl</a>
-                    <a href="analyze" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
+                    <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action">Create a new analysis</a>
                     {% endif %}
                 </div>
             </div>

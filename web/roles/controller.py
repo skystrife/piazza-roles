@@ -9,6 +9,7 @@ import piazza_api
 import requests
 from operator import attrgetter
 
+from .forms import *
 from .models import *
 from .tasks import *
 
@@ -185,3 +186,46 @@ def start_crawl_class(network_id):
     db.session.commit()
 
     return render_template('crawl.html', network=g.network)
+
+
+@bp.route('/class/<network_id>/analysis', methods=['GET', 'POST'])
+@login_required
+@network_required
+@register_breadcrumb(bp, '.classes.network_id.analyze', 'Analysis')
+def new_analysis(network_id):
+    form = AnalysisForm()
+    if form.validate_on_submit():
+        analysis = Analysis(
+            crawl_id=g.network.crawl.id,
+            session_gap=form.session_gap.data,
+            role_count=form.role_count.data,
+            max_iterations=form.max_iterations.data,
+            proportion_smoothing=form.proportion_smoothing.data,
+            role_smoothing=form.role_smoothing.data)
+        db.session.add(analysis)
+        db.session.commit()
+
+        task = construct_sessions.delay(analysis.id)
+        analysis.task_id = task.id
+        db.session.commit()
+
+        return redirect(
+            url_for(
+                'analysis', network_id=network_id, analysis_id=analysis.id))
+    return render_template('new_analysis.html', network=g.network, form=form)
+
+
+@bp.route('/class/<network_id>/analysis/<analysis_id>')
+@login_required
+@network_required
+@register_breadcrumb(bp, '.classes.network_id.analyze.analysis_id',
+                     'View analysis')
+def analysis(network_id, analysis_id):
+    ana = Analysis.query.get(analysis_id)
+    if not ana:
+        abort(404)
+    return render_template(
+        'analysis.html',
+        network=g.network,
+        analysis=ana,
+        progress=ana.progress())

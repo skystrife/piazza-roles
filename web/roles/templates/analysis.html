@@ -1,0 +1,44 @@
+{% extends 'layout.html' %}
+{% block title %}Analyzing {{ network.number }} ({{ network.term }}){% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <h5 class="card-header">
+                {{ network.number }} ({{ network.term }}): {{ network.name }} - Analysis {{ analysis.id }}
+            </h5>
+
+            {% if not analysis.finished %}
+            <div class="card-body">
+                <h5 class="card-title">An analysis is in progress.</h5>
+                <div class="row">
+                    <div class="col-sm-3">
+                        Session extraction
+                    </div>
+                    <div class="col-sm-9 progress mb-2">
+                        <div id='sessionProgress' class="progress-bar" role="progressbar" style="width: {{ progress['sessions'] }}%;" aria-valuenow="{{ progress['sessions'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-3">
+                        Role inference (sampling)
+                    </div>
+                    <div class="col-sm-9 progress mb-2">
+                        <div id='samplingProgress' class="progress-bar" role="progressbar" style="width: {{ progress['sampling'] }}%;" aria-valuenow="{{ progress['sampling'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            TODO
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/jquery-3.3.1.slim.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/socket.io.slim.js') }}"></script>
+<script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
+{% endblock %}

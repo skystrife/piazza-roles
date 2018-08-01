@@ -1,5 +1,6 @@
 from celery import Celery, current_task
 from celery.result import AsyncResult
+from datetime import datetime, timedelta
 import os
 import piazza_api
 import random
@@ -29,6 +30,7 @@ def configure_celery(app):
 @celery.task(bind=True)
 def crawl_course(self, crawl_id, piazza_jar):
     CRAWL_DELAY = 0.5
+
     def sleep():
         sleep_time = CRAWL_DELAY * random.uniform(0.5, 1.5)
         time.sleep(sleep_time)
@@ -40,7 +42,6 @@ def crawl_course(self, crawl_id, piazza_jar):
             namespace='/network',
             room=crawl.network_id)
         self.update_state(state='PROGRESS', meta={'progress': progress})
-
 
     crawl = Crawl.query.get(crawl_id)
     print("Crawling {}".format(crawl.network))
@@ -62,3 +63,44 @@ def crawl_course(self, crawl_id, piazza_jar):
 
     crawl.finished = True
     db.session.commit()
+
+
+@celery.task(bind=True)
+def construct_sessions(self, analysis_id):
+    analysis = Analysis.query.get(analysis_id)
+
+    def update_sessions_progress(current, total):
+        progress = 100 * float(current) / total
+        socketio.emit(
+            'progress', {'sessions': progress},
+            namespace='/analysis',
+            room=analysis_id)
+        self.update_state(state='PROGRESS', meta={'sessions': progress})
+
+    actions = Action.query.filter_by(crawl_id=analysis.crawl_id)
+    actions = actions.order_by(Action.uid).order_by(Action.time).all()
+    total = len(actions)
+
+    gap_len = datetime.timedelta(hours=analysis.session_gap)
+
+    uid = None
+    session = None
+    prev_action = None
+    for idx, action in enumerate(actions):
+        update_sessions_progress(idx, total)
+
+        # A session "ends" if either the current user is different (we've
+        # moved to a different user's action list) or if the gap length
+        # between the previous action and this action is more than the
+        # analysis' session_gap
+        if action.uid != uid or (prev_action
+                                 and action.time - prev_action.time > gap_len):
+            if session:
+                db.session.add(session)
+                db.session.commit()
+            session = Session(uid=action.uid, analysis_id=analysis_id)
+            uid = action.uid
+            prev_action = None
+
+        session.actions.append(action)
+        prev_action = action

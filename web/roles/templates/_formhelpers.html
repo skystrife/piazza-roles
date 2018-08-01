@@ -1,0 +1,19 @@
+{% macro render_field(field, value, class_='') %}
+{% if field.errors %}
+{% set class_ = class_ + ' is-invalid' %}
+{% endif %}
+{% if not field.data %}
+{{ field(value=value, class_=class_, **kwargs) }}
+{% else %}
+{{ field(class_=class_, **kwargs) }}
+{% endif %}
+{% if field.errors %}
+<div class="invalid-feedback">
+    <ul>
+        {% for error in field.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endmacro %}

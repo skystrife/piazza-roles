@@ -1,0 +1,70 @@
+{% extends 'layout.html' %}
+{% from "_formhelpers.html" import render_field %}
+{% block title %}Analyzing {{ network.number }} ({{ network.term }}){% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <div class="card" id="CrawlCard">
+            <h5 class="card-header">
+                {{ network.number }} ({{ network.term }}): {{ network.name }}
+            </h5>
+            <div class="card-body">
+                <h4>Create a new analysis</h4>
+                <form method="post">
+                    {{ form.hidden_tag() }}
+                    <div class="form-group row">
+                        {{ form.session_gap.label(class_='col-sm-3 col-form-label') }}
+                        <div class="col-sm-9">
+                            {{ render_field(form.session_gap, value=6, class_='form-control', type='number') }}
+                            <small id="sessionGapHelp" class="form-text text-muted">If there is a gap between subsequent actions taken by a user that is larger than the session gap length, a new session is assumed to have started for that user.</small>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        {{ form.role_count.label(class_='col-sm-3 col-form-label') }}
+                        <div class="col-sm-9">
+                            {{ render_field(form.role_count, value=5, class_='form-control', type='number', oninput='proportion_smoothing.value = Math.round(50.0 / role_count.value * 10) / 10') }}
+                            <small id="roleCountHelp" class="form-text text-muted">The more roles you have, the more fine-grained differences you can detect between behavior patterns. However, there may be a point of diminishing returns where the newly added roles do not capture sufficiently different behavior patterns. We recommend being conservative with this number at first and slowly increasing it until you do not see meaningfully different roles being created in the analysis.</small>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        {{ form.max_iterations.label(class_='col-sm-3 col-form-label') }}
+                        <div class="col-sm-9">
+                            {{ render_field(form.max_iterations, value=1000, class_='form-control', type='number') }}
+                            <small id="maxIterHelp" class="form-text text-muted">This is a trade-off between the time taken to complete the analysis and the quality of the discovered roles.</small>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        {{ form.proportion_smoothing.label(class_='col-sm-3 col-form-label') }}
+                        <div class="col-sm-9">
+                            {{ render_field(form.proportion_smoothing, value=10, class_='form-control', type='number') }}
+                            <small id="proportionSmoothingHelp" class="form-text text-muted">This is a smoothing constant for the role proportion distributions learned for each individual user.</small>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        {{ form.role_smoothing.label(class_='col-sm-3 col-form-label') }}
+                        <div class="col-sm-9">
+                            {{ render_field(form.role_smoothing, value=0.1, class_='form-control', type='number') }}
+                            <small id="proportionSmoothingHelp" class="form-text text-muted">This is a smoothing constant for the action proportion distributions learned for each individual role. We recommend keeping this at a small number (less smoothing) to learn roles that are quite different from one another.</small>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-sm-3"></div>
+                        <div class="col-sm-9">
+                            <button type="submit" class="btn btn-primary">Create analysis</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if false %}
+<script src="{{ url_for('static', filename='js/jquery-3.3.1.slim.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/socket.io.slim.js') }}"></script>
+<script src="{{ url_for('static', filename='js/crawl.js') }}"></script>
+{% endif %}
+{% endblock %}
