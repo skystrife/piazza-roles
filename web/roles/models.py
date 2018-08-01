@@ -333,6 +333,17 @@ class Analysis(db.Model):
     role_smoothing = db.Column(db.Float, nullable=False)
 
 
+session_action = db.Table(
+    'session_action',
+    db.Column(
+        'session_id',
+        db.Integer,
+        db.ForeignKey('session.id'),
+        primary_key=True),
+    db.Column(
+        'action_id', db.Integer, db.ForeignKey('action.id'), primary_key=True))
+
+
 class Session(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.String(120), nullable=False, index=True)
@@ -344,6 +355,7 @@ class Session(db.Model):
     role_id = db.Column(
         db.Integer, db.ForeignKey('role.id'), nullable=True, default=None)
     role = db.relationship('Role')
+    actions = db.relationship('Action', secondary=session_action, lazy=False)
 
 
 class Role(db.Model):
