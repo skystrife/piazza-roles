@@ -207,7 +207,6 @@ class ActionType(IntEnum):
             else:
                 return cls.POLL_EDIT_OP_NAME
 
-
     @classmethod
     def question_history_type(cls, is_edit, my_post, anon):
         if not is_edit:
@@ -308,11 +307,10 @@ class ActionType(IntEnum):
 
 class Action(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    crawl_id = db.Column(
-        db.Integer, db.ForeignKey('crawl.id'), nullable=False)
+    crawl_id = db.Column(db.Integer, db.ForeignKey('crawl.id'), nullable=False)
     crawl = db.relationship(
         'Crawl',
-        backref=db.backref('actions', lazy=True, cascade="all,delete"))
+        backref=db.backref('actions', lazy=True, cascade='all,delete'))
     uid = db.Column(db.String(120), nullable=False, index=True)
     type_id = db.Column(db.Integer, nullable=False)
     time = db.Column(db.DateTime, nullable=False)
@@ -320,3 +318,58 @@ class Action(db.Model):
 
     def action_type(self):
         return ActionType(self.type_id)
+
+
+class Analysis(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    crawl_id = db.Column(db.Integer, db.ForeignKey('crawl.id'), nullable=False)
+    crawl = db.relationship(
+        'Crawl',
+        backref=db.backref('analyses', lazy=True, cascade='all,delete'))
+    session_gap = db.Column(db.Float, nullable=False)
+    role_count = db.Column(db.Integer, nullable=False)
+    max_iterations = db.Column(db.Integer, nullable=False)
+    proportion_smoothing = db.Column(db.Float, nullable=False)
+    role_smoothing = db.Column(db.Float, nullable=False)
+
+
+class Session(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    uid = db.Column(db.String(120), nullable=False, index=True)
+    analysis_id = db.Column(
+        db.Integer, db.ForeignKey('analysis.id'), nullable=False)
+    analysis = db.relationship(
+        'Analysis',
+        backref=db.backref('sessions', lazy=True, cascade='all,delete'))
+    role_id = db.Column(
+        db.Integer, db.ForeignKey('role.id'), nullable=True, default=None)
+    role = db.relationship('Role')
+
+
+class Role(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    analysis_id = db.Column(
+        db.Integer, db.ForeignKey('analysis.id'), nullable=False)
+    analysis = db.relationship(
+        'Analysis',
+        backref=db.backref('roles', lazy=True, cascade='all,delete'))
+
+
+class ActionWeight(db.Model):
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
+    role = db.relationship(
+        'Role',
+        backref=db.backref('weights', lazy=False, cascade='all,delete'))
+    type_id = db.Column(db.Integer, primary_key=True)
+    weight = db.Column(db.Float, nullable=True)
+
+
+class RoleProportion(db.Model):
+    uid = db.Column(db.String(120), primary_key=True)
+    analysis_id = db.Column(
+        db.Integer, db.ForeignKey('analysis.id'), primary_key=True)
+    analysis = db.relationship(
+        'Analysis',
+        backref=db.backref('proportions', lazy=False, cascade='all,delete'))
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
+    role = db.relationship('Role')
