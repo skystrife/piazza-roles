@@ -331,7 +331,19 @@ class Analysis(db.Model):
     max_iterations = db.Column(db.Integer, nullable=False)
     proportion_smoothing = db.Column(db.Float, nullable=False)
     role_smoothing = db.Column(db.Float, nullable=False)
+    finished = db.Column(db.Boolean, default=False)
+    task_id = db.Column(db.String(120), index=True)
 
+    def progress(self):
+        if self.finished:
+            return {'sessions': 100, 'sampling': 100}
+        try:
+            result = AsyncResult(self.task_id)
+            if result.state == 'PROGRESS':
+                return result.info
+        except:
+            pass
+        return {'sessions': 0, 'sampling': 0}
 
 session_action = db.Table(
     'session_action',
