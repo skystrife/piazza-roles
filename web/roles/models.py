@@ -1,5 +1,5 @@
 from celery.result import AsyncResult
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import IntEnum, auto
 from flask_sqlalchemy import SQLAlchemy
 
@@ -344,6 +344,39 @@ class Analysis(db.Model):
         except:
             pass
         return {'sessions': 0, 'sampling': 0}
+
+    def extract_sessions(self):
+        actions = Action.query.filter_by(crawl_id=self.crawl_id)
+        actions = actions.order_by(Action.uid).order_by(Action.time)
+
+        gap_len = timedelta(hours=self.session_gap)
+        uid = None
+        session = None
+        prev_action = None
+        for action in actions:
+            # A session "ends" if either the current user is different (we've
+            # moved to a different user's action list) or if the gap length
+            # between the previous action and this action is more than the
+            # analysis' session_gap
+            if action.uid != uid or (prev_action and
+                                     action.time - prev_action.time > gap_len):
+                if session:
+                    db.session.add(session)
+                    db.session.commit()
+                    yield session
+
+                session = Session(uid=action.uid, analysis_id=self.id)
+                uid = action.uid
+                prev_action = None
+
+            session.actions.append(action)
+            prev_action = action
+
+        if session:
+            db.session.add(session)
+            db.session.commit()
+            yield session
+
 
 session_action = db.Table(
     'session_action',
