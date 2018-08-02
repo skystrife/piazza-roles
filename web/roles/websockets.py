@@ -32,3 +32,16 @@ def network_subscribe(data):
             result = AsyncResult(net.crawl.task_id)
             if result.state == 'PROGRESS':
                 emit('progress', result.info, room=network_id)
+
+@socketio.on('subscribe', namespace='/analysis')
+def analysis_subscribe(data):
+    analysis_id = data.get('id')
+    if not analysis_id:
+        return False
+
+    ana = Analysis.query.get(analysis_id)
+    if not ana:
+        return False
+
+    join_room(analysis_id)
+    emit('progress', ana.progress(), room=analysis_id)

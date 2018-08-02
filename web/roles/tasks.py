@@ -1,6 +1,7 @@
 from celery import Celery, current_task
 from celery.result import AsyncResult
 from datetime import datetime, timedelta
+import functools
 import os
 import piazza_api
 import random
@@ -27,6 +28,24 @@ def configure_celery(app):
     celery.Task = ContextTask
 
 
+class throttle(object):
+    def __init__(self, period):
+        self.period = period
+        self.last_called = datetime.min
+
+    def __call__(self, fun):
+        @functools.wraps(fun)
+        def wrapper(*args, force=False, **kwargs):
+            now = datetime.now()
+            elapsed = now - self.last_called
+
+            if elapsed > self.period or force:
+                self.last_called = now
+                fun(*args, **kwargs)
+
+        return wrapper
+
+
 @celery.task(bind=True)
 def crawl_course(self, crawl_id, piazza_jar):
     CRAWL_DELAY = 0.5
@@ -35,6 +54,7 @@ def crawl_course(self, crawl_id, piazza_jar):
         sleep_time = CRAWL_DELAY * random.uniform(0.5, 1.5)
         time.sleep(sleep_time)
 
+    @throttle(timedelta(seconds=1))
     def update_progress(current, total):
         progress = 100 * float(current) / total
         socketio.emit(
@@ -60,6 +80,7 @@ def crawl_course(self, crawl_id, piazza_jar):
         crawl.create_actions_from_post(post)
         db.session.commit()
         update_progress(idx, total_posts)
+    update_progress(total_posts, total_posts, force=True)
 
     crawl.finished = True
     db.session.commit()
@@ -69,6 +90,7 @@ def crawl_course(self, crawl_id, piazza_jar):
 def construct_sessions(self, analysis_id):
     analysis = Analysis.query.get(analysis_id)
 
+    @throttle(timedelta(seconds=1))
     def update_sessions_progress(current, total):
         progress = 100 * float(current) / total
         socketio.emit(
@@ -77,30 +99,9 @@ def construct_sessions(self, analysis_id):
             room=analysis_id)
         self.update_state(state='PROGRESS', meta={'sessions': progress})
 
-    actions = Action.query.filter_by(crawl_id=analysis.crawl_id)
-    actions = actions.order_by(Action.uid).order_by(Action.time).all()
-    total = len(actions)
-
-    gap_len = datetime.timedelta(hours=analysis.session_gap)
-
-    uid = None
-    session = None
-    prev_action = None
-    for idx, action in enumerate(actions):
-        update_sessions_progress(idx, total)
-
-        # A session "ends" if either the current user is different (we've
-        # moved to a different user's action list) or if the gap length
-        # between the previous action and this action is more than the
-        # analysis' session_gap
-        if action.uid != uid or (prev_action
-                                 and action.time - prev_action.time > gap_len):
-            if session:
-                db.session.add(session)
-                db.session.commit()
-            session = Session(uid=action.uid, analysis_id=analysis_id)
-            uid = action.uid
-            prev_action = None
-
-        session.actions.append(action)
-        prev_action = action
+    total = Action.query.filter_by(crawl_id=analysis.crawl_id).count()
+    current = 0
+    for session in analysis.extract_sessions():
+        current += len(session.actions)
+        update_sessions_progress(current, total)
+    update_sessions_progress(current, total, force=True)
