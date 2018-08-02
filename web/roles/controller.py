@@ -211,7 +211,7 @@ def new_analysis(network_id):
 
         return redirect(
             url_for(
-                'analysis', network_id=network_id, analysis_id=analysis.id))
+                '.analysis', network_id=network_id, analysis_id=analysis.id))
     return render_template('new_analysis.html', network=g.network, form=form)
 
 
