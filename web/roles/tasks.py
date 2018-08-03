@@ -87,21 +87,34 @@ def crawl_course(self, crawl_id, piazza_jar):
 
 
 @celery.task(bind=True)
-def construct_sessions(self, analysis_id):
+def run_analysis(self, analysis_id):
     analysis = Analysis.query.get(analysis_id)
 
     @throttle(timedelta(seconds=1))
-    def update_sessions_progress(current, total):
-        progress = 100 * float(current) / total
+    def send_progress(progress):
         socketio.emit(
-            'progress', {'sessions': progress},
+            'progress', progress,
             namespace='/analysis',
             room=analysis_id)
-        self.update_state(state='PROGRESS', meta={'sessions': progress})
+        self.update_state(state='PROGRESS', meta=progress)
 
-    total = Action.query.filter_by(crawl_id=analysis.crawl_id).count()
-    current = 0
-    for session in analysis.extract_sessions():
-        current += len(session.actions)
-        update_sessions_progress(current, total)
-    update_sessions_progress(current, total, force=True)
+    def update_sessions_progress(current, total):
+        progress = 100 * float(current) / total
+        force = (progress >= 100)
+        send_progress({'sessions': progress}, force=force)
+
+    analysis.extract_sessions(progress_report=update_sessions_progress)
+
+    log_likelihood = None
+    def update_sampler_progress(current_iter, max_iter, current_assignment,
+                                max_assignments, ll=None):
+        progress = {
+            'sessions': 100,
+            'sampling': 100 * float(current_iter) / max_iter,
+            'iteration': 100 * float(current_assignment) / max_assignments,
+            'log_likelihood': ll
+        }
+        force = (current_iter == max_iter and ll is not None)
+        send_progress(progress, force=force)
+
+    analysis.run_sampler(progress_report=update_sampler_progress)

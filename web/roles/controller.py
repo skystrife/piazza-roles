@@ -205,7 +205,7 @@ def new_analysis(network_id):
         db.session.add(analysis)
         db.session.commit()
 
-        task = construct_sessions.delay(analysis.id)
+        task = run_analysis.delay(analysis.id)
         analysis.task_id = task.id
         db.session.commit()
 

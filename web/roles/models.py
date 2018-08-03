@@ -2,6 +2,8 @@ from celery.result import AsyncResult
 from datetime import datetime, timedelta
 from enum import IntEnum, auto
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
+import mdmm_sampler
 
 db = SQLAlchemy()
 
@@ -28,7 +30,10 @@ class Network(db.Model):
         lazy='subquery',
         backref=db.backref('networks', lazy=True))
     crawl = db.relationship(
-        'Crawl', backref='network', cascade='all,delete', uselist=False)
+        'Crawl',
+        backref='network',
+        cascade='all, delete-orphan',
+        uselist=False)
 
     def __repr(self):
         return "<Network: {}:{} ({} {})>".format(self.id, self.nid,
@@ -52,7 +57,7 @@ class Crawl(db.Model):
     errors = db.relationship(
         'CrawlError',
         backref=db.backref('crawl', lazy=True),
-        cascade='all,delete,delete-orphan')
+        cascade='all, delete-orphan')
 
     def __repr__(self):
         return "<Crawl: {}>".format(self.id)
@@ -310,7 +315,7 @@ class Action(db.Model):
     crawl_id = db.Column(db.Integer, db.ForeignKey('crawl.id'), nullable=False)
     crawl = db.relationship(
         'Crawl',
-        backref=db.backref('actions', lazy=True, cascade='all,delete'))
+        backref=db.backref('actions', lazy=True, cascade='all, delete-orphan'))
     uid = db.Column(db.String(120), nullable=False, index=True)
     type_id = db.Column(db.Integer, nullable=False)
     time = db.Column(db.DateTime, nullable=False)
@@ -325,7 +330,8 @@ class Analysis(db.Model):
     crawl_id = db.Column(db.Integer, db.ForeignKey('crawl.id'), nullable=False)
     crawl = db.relationship(
         'Crawl',
-        backref=db.backref('analyses', lazy=True, cascade='all,delete'))
+        backref=db.backref(
+            'analyses', lazy=True, cascade='all, delete-orphan'))
     session_gap = db.Column(db.Float, nullable=False)
     role_count = db.Column(db.Integer, nullable=False)
     max_iterations = db.Column(db.Integer, nullable=False)
@@ -345,11 +351,22 @@ class Analysis(db.Model):
             pass
         return {'sessions': 0, 'sampling': 0}
 
-    def extract_sessions(self):
+    def extract_sessions(self, progress_report):
         actions = Action.query.filter_by(crawl_id=self.crawl_id)
-        actions = actions.order_by(Action.uid).order_by(Action.time)
+        total = actions.count()
+        current = 0
 
+        def add_and_report(session, force=False):
+            result = current
+            if session:
+                db.session.add(session)
+                result += len(session.actions)
+                progress_report(result, total)
+            return result
+
+        actions = actions.order_by(Action.uid).order_by(Action.time)
         gap_len = timedelta(hours=self.session_gap)
+
         uid = None
         session = None
         prev_action = None
@@ -360,11 +377,7 @@ class Analysis(db.Model):
             # analysis' session_gap
             if action.uid != uid or (prev_action and
                                      action.time - prev_action.time > gap_len):
-                if session:
-                    db.session.add(session)
-                    db.session.commit()
-                    yield session
-
+                current = add_and_report(session)
                 session = Session(uid=action.uid, analysis_id=self.id)
                 uid = action.uid
                 prev_action = None
@@ -372,10 +385,87 @@ class Analysis(db.Model):
             session.actions.append(action)
             prev_action = action
 
-        if session:
-            db.session.add(session)
-            db.session.commit()
-            yield session
+        current = add_and_report(session)
+        db.session.commit()
+        return current
+
+    def run_sampler(self, progress_report):
+        # Get ordered sessions by time
+        sessions = Action.query.join(Action, Session.actions)\
+                .filter(Session.analysis_id == self.id)\
+                .with_entities(func.min(Action.time).label('start_time'),
+                               Session.id, Session.uid)\
+                .group_by(Session.id)\
+                .order_by(Session.uid)\
+                .order_by('start_time').all()
+
+        training_data = []
+        user_sessions = []
+        current_user = None
+        for session in sessions:
+            if current_user != session.uid:
+                if user_sessions:
+                    training_data.append(user_sessions)
+                    user_sessions = []
+                current_user = session.uid
+
+            # Extracts a list of tuples (type_id, count(type_id))
+            histogram = Action.query.join(Action, Session.actions)\
+                    .filter(Session.id == session.id)\
+                    .with_entities(Action.type_id,
+                                   func.count(Action.type_id))\
+                    .group_by(Action.type_id)\
+                    .order_by(Action.type_id)
+
+            # Python IDs start at 1; C++ expects starting at 0, so shift
+            # all IDs down by one
+            mod_hist = [(type_id - 1, count) for (type_id, count) in histogram]
+            user_sessions.append(mdmm_sampler.Session(mod_hist))
+
+        if user_sessions:
+            training_data.append(user_sessions)
+
+        options = mdmm_sampler.MDMM.Options(
+            num_topics=self.role_count,
+            num_actions=len(ActionType),
+            alpha=self.proportion_smoothing,
+            beta=self.role_smoothing)
+        rng = mdmm_sampler.random.Xoroshiro128(47)
+        sampler = mdmm_sampler.MDMM(training_data, options, rng)
+        sampler.run(training_data, self.max_iterations, rng, progress_report)
+
+        # Create the roles
+        roles = []
+        for role_num in range(0, self.role_count):
+            role = Role(analysis=self)
+            roles.append(role)
+            db.session.add(role)
+            for action_type in ActionType:
+                prob = sampler.action_probability(role_num,
+                                                  int(action_type) - 1)
+                weight = ActionWeight(
+                    role=role, type_id=int(action_type), weight=prob)
+                db.session.add(weight)
+
+        def create_role_proportions(user_number, uid):
+            for role_id, role in enumerate(roles):
+                prob = sampler.role_probability(user_number, role_id)
+                proportion = RoleProportion(
+                    uid=uid, analysis=self, role=role, weight=prob)
+                db.session.add(proportion)
+
+        # Create the session role assignments and user role proportions
+        user_id = -1
+        current_user = None
+        for idx, sess in enumerate(sessions):
+            if current_user != session.uid:
+                user_id += 1
+                current_user = session.uid
+                create_role_proportions(user_id, current_user)
+
+            session = Session.query.get(sess.id)
+            session.role = roles[sampler.topic_assignment(idx)]
+        db.session.commit()
 
 
 session_action = db.Table(
@@ -396,7 +486,8 @@ class Session(db.Model):
         db.Integer, db.ForeignKey('analysis.id'), nullable=False)
     analysis = db.relationship(
         'Analysis',
-        backref=db.backref('sessions', lazy=True, cascade='all,delete'))
+        backref=db.backref(
+            'sessions', lazy=True, cascade='all, delete-orphan'))
     role_id = db.Column(
         db.Integer, db.ForeignKey('role.id'), nullable=True, default=None)
     role = db.relationship('Role')
@@ -409,14 +500,15 @@ class Role(db.Model):
         db.Integer, db.ForeignKey('analysis.id'), nullable=False)
     analysis = db.relationship(
         'Analysis',
-        backref=db.backref('roles', lazy=True, cascade='all,delete'))
+        backref=db.backref('roles', lazy=True, cascade='all, delete-orphan'))
 
 
 class ActionWeight(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
     role = db.relationship(
         'Role',
-        backref=db.backref('weights', lazy=False, cascade='all,delete'))
+        backref=db.backref(
+            'weights', lazy=False, cascade='all, delete-orphan'))
     type_id = db.Column(db.Integer, primary_key=True)
     weight = db.Column(db.Float, nullable=True)
 
@@ -427,7 +519,8 @@ class RoleProportion(db.Model):
         db.Integer, db.ForeignKey('analysis.id'), primary_key=True)
     analysis = db.relationship(
         'Analysis',
-        backref=db.backref('proportions', lazy=False, cascade='all,delete'))
+        backref=db.backref(
+            'proportions', lazy=False, cascade='all, delete-orphan'))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
     role = db.relationship('Role')
     weight = db.Column(db.Float, nullable=False)
