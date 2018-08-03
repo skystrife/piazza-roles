@@ -25,8 +25,38 @@
         </div>
     </div>
     <div class="col">
+        {% if network.crawl %}
         <div class="list-group">
+            {% for ana in network.crawl.analyses %}
+            <a href="{{ url_for('.analysis', network_id=network.id, analysis_id=ana.id) }}" class="list-group-item list-group-item-action flex-column align-items start">
+                <div class="d-flex w-100 align-items-center">
+                    <h5 class="mb-1">Analysis #{{ ana.id }}</h5>
+                    {% if ana.finished %}
+                    <span class="ml-2 badge badge-primary badge-pill">{{ ana.sessions | count }} sessions</span>
+                    {% else %}
+                    <span class="ml-2 badge badge-secondary badge-pill">Running</span>
+                    {% endif %}
+                </div>
+                <dl class="row small mb-0 mt-1">
+                    <dt class="col-sm-4 m-0">Session gap</dt>
+                    <dd class="col-sm-8 m-0">{{ ana.session_gap }} hours</dd>
+                    <dt class="col-sm-4 m-0">Number of roles</dt>
+                    <dd class="col-sm-8 m-0">{{ ana.role_count }}</dd>
+                    <dt class="col-sm-4 m-0">Sampling iterations</dt>
+                    <dd class="col-sm-8 m-0">{{ ana.max_iterations }}</dd>
+                    <dt class="col-sm-4 m-0">Proportion smoothing</dt>
+                    <dd class="col-sm-8 m-0">{{ ana.proportion_smoothing }}</dd>
+                    <dt class="col-sm-4 m-0">Role smoothing</dt>
+                    <dd class="col-sm-8 m-0">{{ ana.role_smoothing }}</dd>
+                </dl>
+            </a>
+            {% endfor %}
         </div>
+        {% else %}
+        <ul class="list-group">
+            <li class="list-group-item">No analyses have been created.</li>
+        </ul>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
