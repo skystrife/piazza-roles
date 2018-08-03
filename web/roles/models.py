@@ -430,3 +430,4 @@ class RoleProportion(db.Model):
         backref=db.backref('proportions', lazy=False, cascade='all,delete'))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
     role = db.relationship('Role')
+    weight = db.Column(db.Float, nullable=False)
