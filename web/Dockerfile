@@ -1,4 +1,6 @@
 FROM python:3.6
+RUN apt update
+RUN apt install cmake -y
 RUN groupadd web
 RUN useradd -m -g web -s /bin/bash web
 RUN pip install --no-cache-dir pipenv
@@ -8,6 +10,7 @@ USER web
 COPY --chown=web:web Pipfile /srv/web
 COPY --chown=web:web Pipfile.lock /srv/web
 COPY --chown=web:web vendor /srv/web/vendor
+COPY --chown=web:web ext /srv/web/ext
 WORKDIR /srv/web
 RUN pipenv install
 COPY --chown=web:web . /srv/web

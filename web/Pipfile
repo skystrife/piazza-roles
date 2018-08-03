@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 piazza-api = {path = "./vendor/piazza-api"}
+MDMM-sampler = {path = "./ext"}
 flask = "*"
 flask-sqlalchemy = "*"
 gunicorn = "*"

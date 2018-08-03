@@ -1,3 +1,11 @@
 [submodule "vendor/piazza-api"]
 	path = web/vendor/piazza-api
 	url = https://github.com/hfaran/piazza-api/
+[submodule "web/ext/deps/pybind11"]
+	path = web/ext/deps/pybind11
+	url = https://github.com/pybind/pybind11
+	branch = stable
+[submodule "web/ext/deps/meta"]
+	path = web/ext/deps/meta
+	url = https://github.com/meta-toolkit/meta
+	branch = develop
