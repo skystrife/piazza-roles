@@ -118,3 +118,5 @@ def run_analysis(self, analysis_id):
         send_progress(progress, force=force)
 
     analysis.run_sampler(progress_report=update_sampler_progress)
+    analysis.finished = True
+    db.session.commit()
