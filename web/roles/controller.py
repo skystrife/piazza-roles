@@ -224,8 +224,26 @@ def analysis(network_id, analysis_id):
     ana = Analysis.query.get(analysis_id)
     if not ana:
         abort(404)
+
+    action_type_map = {
+        int(atype): {
+            'name': atype.name,
+            'description': atype.description()
+        }
+        for atype in ActionType
+    }
+
+    role_json = None
+    if ana.finished:
+        role_json = {
+            role.id: [aw.weight for aw in role.weights]
+            for role in ana.roles
+        }
+
     return render_template(
         'analysis.html',
         network=g.network,
         analysis=ana,
-        progress=ana.progress())
+        progress=ana.progress(),
+        action_type_map=action_type_map,
+        role_json=role_json)

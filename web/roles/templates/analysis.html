@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="row">
-    <div class="col">
+    <div class="col-sm-12 mb-2">
         <div class="card">
             <h5 class="card-header">
                 {{ network.number }} ({{ network.term }}): {{ network.name }} - Analysis {{ analysis.id }}
@@ -26,15 +26,50 @@
                 </div>
             </div>
             {% else %}
-            TODO
+            <div class="card-body">
+                <dl class="row mb-0 mt-1">
+                    <dt class="col-sm-4 m-0">Session gap</dt>
+                    <dd class="col-sm-8 m-0">{{ analysis.session_gap }} hours</dd>
+                    <dt class="col-sm-4 m-0">Number of roles</dt>
+                    <dd class="col-sm-8 m-0">{{ analysis.role_count }}</dd>
+                    <dt class="col-sm-4 m-0">Sampling iterations</dt>
+                    <dd class="col-sm-8 m-0">{{ analysis.max_iterations }}</dd>
+                    <dt class="col-sm-4 m-0">Proportion smoothing</dt>
+                    <dd class="col-sm-8 m-0">{{ analysis.proportion_smoothing }}</dd>
+                    <dt class="col-sm-4 m-0">Role smoothing</dt>
+                    <dd class="col-sm-8 m-0">{{ analysis.role_smoothing }}</dd>
+                </dl>
+            </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+{% if analysis.finished %}
+<div class="row">
+    {% for role in analysis.roles %}
+    <div class="col-12 mb-2">
+        <div class="card">
+            <h5 class="card-header">Role {{ loop.index }}</h5>
+            <svg class="card-img-top" id="roleChart{{ role.id }}"></svg>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
+{% if analysis.finished %}
+<script type="text/javascript">
+    var action_types = {{ action_type_map | tojson | safe}};
+    var roles = {{ role_json | tojson | safe }};
+</script>
+{% endif %}
 <script src="{{ url_for('static', filename='js/jquery-3.3.1.slim.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/socket.io.slim.js') }}"></script>
+<script src="{{ url_for('static', filename='js/d3.v5.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/d3-scale-chromatic.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
 {% endblock %}

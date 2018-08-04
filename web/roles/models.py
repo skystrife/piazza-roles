@@ -309,6 +309,82 @@ class ActionType(IntEnum):
         else:
             raise Exception('invalid post type')
 
+    def description(self):
+        name = self.name
+
+        post_prefix = 'a'
+        post_type = None
+        if name.startswith('Q_'):
+            post_type = 'question'
+        elif name.startswith('N_'):
+            post_type = 'note'
+        elif name.startswith('POLL_'):
+            post_type = 'poll'
+        elif name.startswith('SR_'):
+            post_type = 'student answer'
+        elif name.startswith('IR_'):
+            post_prefix = 'an'
+            post_type = 'instructor answer'
+        elif name.startswith('FOLLOWUP_'):
+            post_type = 'followup'
+        else:  #elif name.startswith('FEEDBACK_'):
+            post_type = 'followup comment'
+
+        action = "A post"
+        if name.find('EDIT') != -1:
+            action = "An edit"
+
+        if name.find('_MF_') != -1:
+            post_type += ' on their own followup'
+        if name.find('_OF_') != -1:
+            post_type += ' on someone else\'s followup'
+
+        def adjust_for_ownership(ptype, ownership):
+            new_prefix = post_prefix
+            new_post_type = post_type
+            if post_type.find(ptype) != -1:
+                new_prefix = ownership
+            else:
+                new_post_type += " on {} {}".format(ownership, ptype)
+
+            return (new_prefix, new_post_type)
+
+        if name.find('_MA') != -1:
+            post_prefix, post_type = adjust_for_ownership(
+                'answer', 'their own')
+
+        if name.find('_OA') != -1:
+            post_prefix, post_type = adjust_for_ownership(
+                'answer', 'someone else\'s')
+
+        if name.find('_MQ_') != -1:
+            post_prefix, post_type = adjust_for_ownership(
+                'question', 'their own')
+
+        if name.find('_OQ_') != -1:
+            post_prefix, post_type = adjust_for_ownership(
+                'question', 'someone else\'s')
+
+        if name.find('_MN_') != -1:
+            post_prefix, post_type = adjust_for_ownership('note', 'their own')
+
+        if name.find('_ON_') != -1:
+            post_prefix, post_type = adjust_for_ownership(
+                'note', 'someone else\'s')
+
+        if name.find('_MP_') != -1:
+            post_prefix, post_type = adjust_for_ownership('poll', 'their own')
+
+        if name.find('_OP_') != -1:
+            post_prefix, post_type = adjust_for_ownership(
+                'poll', 'someone else\'s')
+
+        anonymous = 'anonymously' if name.find(
+            'ANON') != -1 else 'non-anonymously'
+
+        return "{} of {} {} {}".format(action, post_prefix, post_type,
+                                       anonymous)
+
 
 class Action(db.Model):
     id = db.Column(db.Integer, primary_key=True)
