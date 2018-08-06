@@ -74,6 +74,9 @@ class Crawl(db.Model):
         return 0
 
     def create_actions_from_history(self, parent, post):
+        #
+        # history is in reverse-chronological order
+        #
         for idx, item in enumerate(reversed(post['history'])):
             type_id = ActionType.from_post_history(
                 parent, post, item, is_edit=(idx != 0))
@@ -91,6 +94,12 @@ class Crawl(db.Model):
             db.session.add(action)
 
     def create_actions_from_followup(self, parent, post, child=None):
+        #
+        # because feedback and followup content types are basically the
+        # same, we can re-use this function for both. If child is none,
+        # then it is a root "followup", otherwise it is a "feedback"
+        # comment.
+        #
         if child:
             type_id = ActionType.feedback_action_type(parent, post, child)
         else:
@@ -115,7 +124,6 @@ class Crawl(db.Model):
         # root['children'] == ir, sr, followups
         # followup['children] == feedback
         #
-        # history is in reverse-chronological order
         self.create_actions_from_history(post, post)
 
         for child in post['children']:
