@@ -12,6 +12,7 @@ from operator import attrgetter
 from .forms import *
 from .models import *
 from .tasks import *
+from .utils import *
 
 bp = Blueprint('main', __name__)
 default_breadcrumb_root(bp, '.')
@@ -29,9 +30,7 @@ def load_user():
         g.user = None
     else:
         g.user = User.query.get(uid)
-        piazza_rpc = piazza_api.rpc.PiazzaRPC()
-        piazza_rpc.cookies = requests.utils.cookiejar_from_dict(piazza_jar)
-        g.piazza = piazza_api.Piazza(piazza_rpc)
+        g.piazza = piazza_from_cookie_dict(piazza_jar)
 
 
 def login_required(view):
@@ -79,7 +78,7 @@ def login():
     try:
         piazza_rpc.user_login(email, password)
         session['piazza_jar'] = requests.utils.dict_from_cookiejar(
-            piazza_rpc.cookies)
+            piazza_rpc.session.cookies)
         g.piazza = piazza_api.Piazza(piazza_rpc)
 
         user = User.query.filter_by(email=email).first()
@@ -173,15 +172,29 @@ def crawl_class(network_id):
 @network_required
 @register_breadcrumb(bp, '.classes.network_id.crawl', 'Crawl')
 def start_crawl_class(network_id):
+    try:
+        email = request.form['email']
+        password = request.form['password']
+
+        piazza_rpc = piazza_api.rpc.PiazzaRPC()
+        piazza_rpc.user_login(email, password)
+        piazza = piazza_api.Piazza(piazza_rpc)
+        net = piazza.network(g.network.nid)
+        net.get_feed(limit=1)
+    except:
+        flash('Could not communicate with Piazza. Try again?', 'danger')
+        return render_template('crawl.html', network=g.network)
+
     if g.network.crawl:
         db.session.delete(g.network.crawl)
-        Action.query.filter_by(network_id=g.network.id).delete()
+        db.session.commit()
 
     crawl = Crawl(network=g.network)
     db.session.add(crawl)
     db.session.commit()
 
-    task = crawl_course.delay(crawl.id, session.get('piazza_jar'))
+    cookiejar = requests.utils.dict_from_cookiejar(piazza_rpc.session.cookies)
+    task = crawl_course.delay(crawl.id, cookiejar)
     crawl.task_id = task.id
     db.session.commit()
 

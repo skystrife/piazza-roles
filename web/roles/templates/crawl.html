@@ -12,9 +12,6 @@
                 {% if not network.crawl %}
                 <h5 class="card-title">Start a crawl?</h5>
                 <p class="card-text"> Crawling a course can take a long time. When you press the button below to start a crawl, we will begin crawling <strong>{{ network.number }}</strong> from {{ network.term }} in the background. You will be able to see the progress of the crawl on this page once it has been started.</p>
-                <form method="post">
-                    <button type="submit" class="btn btn-primary">Start crawl</button>
-                </form>
                 {% else %}
                 <h5 class="card-title">
                     {% if network.crawl.finished %}
@@ -31,7 +28,7 @@
                 <div id="CrawlErrors">
                     {% if network.crawl.errors %}
                     <p class="card-text">
-                        {% if len(network.crawl.errors) == 1 %}
+                        {% if network.crawl.errors | length == 1 %}
                         There was an error encountered during the crawl.
                         {% else %}
                         There were some errors encountered during the crawl.
@@ -44,13 +41,41 @@
                     {% endfor %}
                     {% endif %}
                 </div>
+                {% if network.crawl.finished %}
+                <p class="card-text">If you would like to retry the crawl, click the "Restart crawl" button below.</p>
+                <p class="card-text"><strong>This will delete all analyses for this network!</strong>
+                {% if network.crawl.analyses | count == 1 %}
+                There is currently one analysis associated with this crawl.
+                {% else %}
+                There are currently {{ network.crawl.analyses | count }} analyses associated with this crawl.
+                {% endif %}
+                </p>
+                {% endif %}
+                {% endif %}
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                {% if not network.crawl or network.crawl.finished %}
                 <form method="post">
-                    {% if network.crawl.finished %}
-                    <p class="card-text">If you would like to retry the crawl, click the "Restart crawl" button below.</p>
-                    <button type="submit" class="btn btn-primary">Restart crawl</button>
-                    {% else %}
-                    <button type="submit" class="btn btn-primary" disabled>Start crawl</button>
-                    {% endif %}
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input name="email" type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Email for Piazza account">
+                        <small id="emailHelp" class="form-text text-muted">This is used to log in to Piazza for crawling this course; this will not be shared with anyone.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input name="password" type="password" class="form-control" id="password" aria-describedby="passwordHelp" placeholder="Password for Piazza account">
+                        <small id="passwordHelp" class="form-text text-muted">This is used to log in to Piazza for crawling this course; this information is not stored in any of our databases, which is why we need you to log in again to start a crawl.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Start the crawl</button>
                 </form>
                 {% endif %}
             </div>

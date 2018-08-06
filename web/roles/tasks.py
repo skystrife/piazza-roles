@@ -1,5 +1,6 @@
 from celery import Celery, current_task
 from celery.result import AsyncResult
+from celery.utils.log import get_task_logger
 from datetime import datetime, timedelta
 import functools
 import os
@@ -7,14 +8,18 @@ import piazza_api
 import random
 import requests
 import time
+import traceback
 
 from .models import *
+from .utils import *
 from .websockets import socketio
 
 celery = Celery(
     __name__,
     backend=os.environ.get('CELERY_RESULT_BACKEND'),
     broker=os.environ.get('CELERY_BROKER_URL'))
+
+logger = get_task_logger(__name__)
 
 
 def configure_celery(app):
@@ -64,20 +69,25 @@ def crawl_course(self, crawl_id, piazza_jar):
         self.update_state(state='PROGRESS', meta={'progress': progress})
 
     crawl = Crawl.query.get(crawl_id)
-    print("Crawling {}".format(crawl.network))
 
-    piazza_rpc = piazza_api.rpc.PiazzaRPC()
-    piazza_rpc.cookies = requests.utils.cookiejar_from_dict(piazza_jar)
-    piazza = piazza_api.Piazza(piazza_rpc)
+    piazza = piazza_from_cookie_dict(piazza_jar)
+    print("Initial Cookies: {}".format(piazza._rpc_api.session.cookies.__repr__()))
     network = piazza.network(crawl.network.nid)
     feed = network.get_feed(limit=999999, offset=0)
 
     total_posts = len(feed['feed'])
     for idx, feed_item in enumerate(feed['feed']):
         sleep()
+        print("Cookies: {}".format(piazza._rpc_api.session.cookies.__repr__()))
         post = network.get_post(feed_item['id'])
-        print(post)
-        crawl.create_actions_from_post(post)
+        try:
+            crawl.create_actions_from_post(post)
+        except Exception as e:
+            msg = traceback.format_exc()
+            logger.error(msg)
+            error = CrawlError(crawl_id=crawl.id, message=msg)
+            crawl.errors.append(error)
+            db.session.add(error)
         db.session.commit()
         update_progress(idx, total_posts)
     update_progress(total_posts, total_posts, force=True)
@@ -93,9 +103,7 @@ def run_analysis(self, analysis_id):
     @throttle(timedelta(seconds=1))
     def send_progress(progress):
         socketio.emit(
-            'progress', progress,
-            namespace='/analysis',
-            room=analysis_id)
+            'progress', progress, namespace='/analysis', room=analysis_id)
         self.update_state(state='PROGRESS', meta=progress)
 
     def update_sessions_progress(current, total):
@@ -106,8 +114,12 @@ def run_analysis(self, analysis_id):
     analysis.extract_sessions(progress_report=update_sessions_progress)
 
     log_likelihood = None
-    def update_sampler_progress(current_iter, max_iter, current_assignment,
-                                max_assignments, ll=None):
+
+    def update_sampler_progress(current_iter,
+                                max_iter,
+                                current_assignment,
+                                max_assignments,
+                                ll=None):
         progress = {
             'sessions': 100,
             'sampling': 100 * float(current_iter) / max_iter,
