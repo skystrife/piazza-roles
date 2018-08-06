@@ -58,6 +58,7 @@ class Crawl(db.Model):
         'CrawlError',
         backref=db.backref('crawl', lazy=True),
         cascade='all, delete-orphan')
+    num_fully_anon = db.Column(db.Integer, nullable=False, server_default="0")
 
     def __repr__(self):
         return "<Crawl: {}>".format(self.id)
@@ -73,25 +74,40 @@ class Crawl(db.Model):
             pass
         return 0
 
+    def increment_fully_anon(self):
+        self.num_fully_anon += 1
+        if self.num_fully_anon == 1:
+            CrawlError.create_fully_anon(self)
+
     def create_actions_from_history(self, parent, post):
         #
         # history is in reverse-chronological order
         #
         for idx, item in enumerate(reversed(post['history'])):
-            type_id = ActionType.from_post_history(
-                parent, post, item, is_edit=(idx != 0))
-            time = datetime.strptime(item['created'], '%Y-%m-%dT%H:%M:%SZ')
-            if item['subject'] and len(item['subject']) != 0:
-                content = "\n".join([item['subject'], item['content']])
-            else:
-                content = item['content']
-            action = Action(
-                crawl_id=self.id,
-                uid=item['uid'],
-                type_id=int(type_id),
-                time=time,
-                content=content)
-            db.session.add(action)
+            try:
+                type_id = ActionType.from_post_history(
+                    parent, post, item, is_edit=(idx != 0))
+
+                time = datetime.strptime(item['created'], '%Y-%m-%dT%H:%M:%SZ')
+
+                if item['subject'] and len(item['subject']) != 0:
+                    content = "\n".join([item['subject'], item['content']])
+                else:
+                    content = item['content']
+
+                action = Action(
+                    crawl_id=self.id,
+                    uid=item['uid'],
+                    type_id=int(type_id),
+                    time=time,
+                    content=content)
+                db.session.add(action)
+            except KeyError as error:
+                key = error.args[0]
+                if key == 'uid':
+                    self.increment_fully_anon()
+                else:
+                    raise
 
     def create_actions_from_followup(self, parent, post, child=None):
         #
@@ -100,23 +116,30 @@ class Crawl(db.Model):
         # then it is a root "followup", otherwise it is a "feedback"
         # comment.
         #
-        if child:
-            type_id = ActionType.feedback_action_type(parent, post, child)
-        else:
-            type_id = ActionType.followup_action_type(parent, post)
+        try:
+            if child:
+                type_id = ActionType.feedback_action_type(parent, post, child)
+            else:
+                type_id = ActionType.followup_action_type(parent, post)
 
-        time = datetime.strptime(post['created'], '%Y-%m-%dT%H:%M:%SZ')
-        action = Action(
-            crawl_id=self.id,
-            uid=post['uid'],
-            type_id=int(type_id),
-            time=time,
-            content=post['subject'])
-        db.session.add(action)
+            time = datetime.strptime(post['created'], '%Y-%m-%dT%H:%M:%SZ')
+            action = Action(
+                crawl_id=self.id,
+                uid=post['uid'],
+                type_id=int(type_id),
+                time=time,
+                content=post['subject'])
+            db.session.add(action)
+        except KeyError as error:
+            key = error.args[0]
+            if key == 'uid':
+                self.increment_fully_anon()
+            else:
+                raise
 
         if not child:
             for child in post['children']:
-                create_actions_from_followup(parent, post, child)
+                self.create_actions_from_followup(parent, post, child)
 
     def create_actions_from_post(self, post):
         #
@@ -140,6 +163,27 @@ class CrawlError(db.Model):
 
     def __repr__(self):
         return "<CrawlError: {}>".format(self.id)
+
+    @staticmethod
+    def create_fully_anon(crawl):
+        error = CrawlError(
+            crawl_id=crawl.id,
+            message=("At least one action was performed while fully "
+                     "anonymous (anonymous to instructors). This makes it "
+                     "impossible to determine which student performed the "
+                     "action, so it cannot be added to a session or be used "
+                     "to determine ownership of content for other dependent "
+                     "actions. This might be OK if only a small portion of "
+                     "the actions were performed this way, but you may want "
+                     "to check the percentage of fully anonymous actions "
+                     "after the crawl has completed to determine whether that "
+                     "percentage of data loss is acceptable to you. To prevent "
+                     "this in the future, you can disable fully anonymous "
+                     "(anonymous to instructors) posting in your Piazza course "
+                     "in the \"Manage Course\" tab on their website."))
+        crawl.errors.append(error)
+        db.session.add(error)
+        return error
 
 
 class ActionType(IntEnum):
@@ -271,7 +315,6 @@ class ActionType(IntEnum):
 
     @classmethod
     def followup_action_type(cls, parent, post):
-        print(post)
         anon = ('anon' in post and post['anon'] != 'no')
         uid = post['uid']
         my_parent = (parent['history'][-1]['uid'] == uid)
@@ -287,10 +330,9 @@ class ActionType(IntEnum):
 
     @classmethod
     def feedback_action_type(cls, root, parent, post):
-        print(post)
         anon = ('anon' in post and post['anon'] != 'no')
         uid = post['uid']
-        my_parent = (parent['history'][-1]['uid'] == uid)
+        my_parent = (parent['uid'] == uid)
         my_root = (root['history'][-1]['uid'] == uid)
 
         mapping = {
