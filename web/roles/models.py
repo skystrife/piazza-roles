@@ -90,8 +90,12 @@ class Crawl(db.Model):
                 content=content)
             db.session.add(action)
 
-    def create_actions_from_followup(self, parent, post):
-        type_id = ActionType.followup_action_type(parent, post)
+    def create_actions_from_followup(self, parent, post, child=None):
+        if child:
+            type_id = ActionType.feedback_action_type(parent, post, child)
+        else:
+            type_id = ActionType.followup_action_type(parent, post)
+
         time = datetime.strptime(post['created'], '%Y-%m-%dT%H:%M:%SZ')
         action = Action(
             crawl_id=self.id,
@@ -100,6 +104,10 @@ class Crawl(db.Model):
             time=time,
             content=post['subject'])
         db.session.add(action)
+
+        if not child:
+            for child in post['children']:
+                create_actions_from_followup(parent, post, child)
 
     def create_actions_from_post(self, post):
         #
