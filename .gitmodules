@@ -1,6 +1,6 @@
 [submodule "vendor/piazza-api"]
 	path = web/vendor/piazza-api
-	url = https://github.com/hfaran/piazza-api/
+	url = https://github.com/skystrife/piazza-api/
 [submodule "web/ext/deps/pybind11"]
 	path = web/ext/deps/pybind11
 	url = https://github.com/pybind/pybind11
