@@ -1,5 +1,5 @@
 function BarChart() {
-    var width = 960, height = 500, xValue = function(d) {
+    var width = 960, barheight = 20, xValue = function(d) {
         return d[0];
     }, yValue = function(d) {
         return d[1];
@@ -14,8 +14,24 @@ function BarChart() {
             // Convert to standard data representation greedily;
             // this is needed for nondeterministic accessors.
             data = data.map(function(d, i) {
-                return [xValue.call(data, d, i), yValue.call(data, d, i)];
-            });
+                           return [
+                               xValue.call(data, d, i), yValue.call(data, d, i)
+                           ];
+                       })
+                       .filter(function(d) {
+                           return d[0] >= 0.001;
+                       });
+
+            yScale.domain(data.map(function(d) {
+                return d[1].name;
+            }));
+            var height = barheight * yScale.domain().length;
+
+            var svg = d3.select(this)
+                          .attr('width', width)
+                          .attr('height', height)
+                          .attr('preserveAspectRatio', 'xMinYMin meet')
+                          .attr('viewBox', `0 0 ${width} ${height}`);
 
             var g = d3.select(this).append('g').attr(
                 'transform',
@@ -28,14 +44,12 @@ function BarChart() {
             xScale.range([0, width - margin.left - margin.right])
                 .domain(extent);
 
-            yScale.range([0, height - margin.top - margin.bottom])
-                .padding(.1)
-                .domain(data.map(function(d) {
-                    return d[1].name;
-                }));
+            yScale.range([0, height - margin.top - margin.bottom]).padding(.1);
+
             colorScale = d3.scaleSequential(d3.interpolateMagma).domain([
                 -0.2 * data.length, 1.2 * data.length
             ]);
+
 
             var xAxis = d3.axisBottom(xScale).tickFormat(d3.format('.0%'));
 
@@ -79,15 +93,16 @@ function BarChart() {
                 .attr('transform', 'translate(0,' + yScale.range()[1] + ')')
                 .call(xAxis);
 
-            g.append('g').attr('class', 'y axis').call(yAxis);
-
-            g.selectAll('.y.axis > .tick')
+            g.append('g')
+                .attr('class', 'y axis')
+                .call(yAxis)
+                .selectAll('.tick')
+                .data(data)
                 .attr('data-toggle', 'tooltip')
                 .attr('data-placement', 'left')
                 .attr('title', function(d, i) {
-                    return action_types[i + 1].description;
+                    return d[1].description;
                 });
-
 
             g.append('path')
                 .datum([
@@ -176,12 +191,8 @@ $(function() {
         });
     });
 
-    var numActions = Object.keys(action_types).length;
-    var barHeight = 20;
-
     var barChart = BarChart()
                        .width(960)
-                       .height(barHeight * numActions)
                        .x(function(d) {
                            return d;
                        })
@@ -193,9 +204,6 @@ $(function() {
 
     for (var role_id in roles) {
         var chartsvg = d3.select('#roleChart' + role_id);
-        chartsvg.attr('width', 960).attr('height', barHeight * numActions);
-        chartsvg.attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', '0 0 960 ' + (barHeight * numActions))
         chartsvg.datum(roles[role_id]).call(barChart);
     }
 
