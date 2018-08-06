@@ -14,7 +14,6 @@
                     <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
                     {% elif not network.crawl.finished %}
                     <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">View crawl <span class="badge badge-light">{{ network.crawl.progress() | round(1) }}%</span></a>
-                    <a href="analyze" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
                     <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
                     {% else %}
                     <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Re-crawl</a>
