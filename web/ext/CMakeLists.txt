@@ -16,4 +16,4 @@ add_subdirectory(deps/meta EXCLUDE_FROM_ALL)
 add_subdirectory(deps/pybind11)
 
 pybind11_add_module(mdmm_sampler src/sampler.cpp)
-target_link_libraries(mdmm_sampler PUBLIC meta-topics)
+target_link_libraries(mdmm_sampler PUBLIC meta-stats meta-util)
