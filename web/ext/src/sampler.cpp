@@ -201,17 +201,17 @@ class dm_mixture_model
 
     topic_id topic_assignment(session_id id) const
     {
-        return topic_assignments_[id];
+        return topic_assignments_.at(id);
     }
 
     double action_probability(topic_id id, action_type aid) const
     {
-        return topics_[id].probability(aid);
+        return topics_.at(id).probability(aid);
     }
 
     double role_probability(user_id uid, topic_id tid) const
     {
-        return topic_proportions_[uid].probability(tid);
+        return topic_proportions_.at(uid).probability(tid);
     }
 
   private:
