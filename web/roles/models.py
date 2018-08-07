@@ -592,9 +592,9 @@ class Analysis(db.Model):
         user_id = -1
         current_user = None
         for idx, sess in enumerate(sessions):
-            if current_user != session.uid:
+            if current_user != sess.uid:
                 user_id += 1
-                current_user = session.uid
+                current_user = sess.uid
                 create_role_proportions(user_id, current_user)
 
             session = Session.query.get(sess.id)
