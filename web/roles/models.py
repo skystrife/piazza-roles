@@ -119,16 +119,18 @@ class Crawl(db.Model):
         try:
             if child:
                 type_id = ActionType.feedback_action_type(parent, post, child)
+                content = child
             else:
                 type_id = ActionType.followup_action_type(parent, post)
+                content = post
 
             time = datetime.strptime(post['created'], '%Y-%m-%dT%H:%M:%SZ')
             action = Action(
                 crawl_id=self.id,
-                uid=post['uid'],
+                uid=content['uid'],
                 type_id=int(type_id),
                 time=time,
-                content=post['subject'])
+                content=content['subject'])
             db.session.add(action)
         except KeyError as error:
             key = error.args[0]
