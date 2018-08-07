@@ -71,14 +71,12 @@ def crawl_course(self, crawl_id, piazza_jar):
     crawl = Crawl.query.get(crawl_id)
 
     piazza = piazza_from_cookie_dict(piazza_jar)
-    print("Initial Cookies: {}".format(piazza._rpc_api.session.cookies.__repr__()))
     network = piazza.network(crawl.network.nid)
     feed = network.get_feed(limit=999999, offset=0)
 
     total_posts = len(feed['feed'])
     for idx, feed_item in enumerate(feed['feed']):
         sleep()
-        print("Cookies: {}".format(piazza._rpc_api.session.cookies.__repr__()))
         post = network.get_post(feed_item['id'])
         try:
             crawl.create_actions_from_post(post)
