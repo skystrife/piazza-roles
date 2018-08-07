@@ -7,19 +7,27 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">{{ network.number }}: {{ network.name }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">{{ network.term }}</h6>
-                <div class="list-group list-group-flush">
-                    {% if not network.crawl %}
-                    <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Start a crawl</a>
-                    <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
-                    {% elif not network.crawl.finished %}
-                    <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">View crawl <span class="badge badge-light">{{ network.crawl.progress() | round(1) }}%</span></a>
-                    <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
-                    {% else %}
-                    <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Re-crawl</a>
-                    <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action">Create a new analysis</a>
-                    {% endif %}
-                </div>
+                <h6 class="card-subtitle text-muted">{{ network.term }}</h6>
+                {% if network.crawl.finished %}
+                <dl class="small row mb-0 mt-1">
+                    <dt class="col-sm-3 m-0">Total users</dt>
+                    <dd class="col-sm-9 m-0">{{ network.crawl.total_users() }}</dd>
+                    <dt class="col-sm-3 m-0">Total actions</dt>
+                    <dd class="col-sm-9 m-0">{{ network.crawl.actions | count }}</dd>
+                </dl>
+                {% endif %}
+            </div>
+            <div class="list-group list-group-flush">
+                {% if not network.crawl %}
+                <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Start a crawl</a>
+                <a href="#" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
+                {% elif not network.crawl.finished %}
+                <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">View crawl <span class="badge badge-light">{{ network.crawl.progress() | round(1) }}%</span></a>
+                <a href="#" class="list-group-item list-group-item-action disabled">Create a new analysis</a>
+                {% else %}
+                <a href="{{ url_for('.crawl_class', network_id=network.id) }}" class="list-group-item list-group-item-action">Re-crawl</a>
+                <a href="{{ url_for('.new_analysis', network_id=network.id) }}" class="list-group-item list-group-item-action">Create a new analysis</a>
+                {% endif %}
             </div>
         </div>
     </div>
