@@ -22,7 +22,7 @@
             {% for cls in classes %}
             <a href="{{ url_for('.view_class', network_id=cls.id) }}" class="list-group-item list-group-item-action flex-column align-items-start">
                 <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">{{ cls.number }} <small>{% if cls.crawl %}{% if cls.crawl.finished %}<span class="badge badge-primary badge-pill">Crawled</span>{% else %}<span class="badge badge-secondary badge-pill">{{ cls.crawl.progress() }}% crawled</span>{% endif %}{% else %}<span class="badge badge-secondary badge-pill">Not crawled</span>{% endif %}</small></h5>
+                    <h5 class="mb-1">{{ cls.number }} <small>{% if cls.crawl %}{% if cls.crawl.finished %}<span class="badge badge-primary badge-pill">Crawled</span>{% else %}<span class="badge badge-secondary badge-pill">{{ cls.crawl.progress() | round(1) }}% crawled</span>{% endif %}{% else %}<span class="badge badge-secondary badge-pill">Not crawled</span>{% endif %}</small></h5>
                     <small class="text-muted">{{ cls.term }}</small>
                 </div>
                 <p class="mb-1">{{ cls.name }}</p>
