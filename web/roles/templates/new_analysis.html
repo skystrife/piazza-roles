@@ -3,6 +3,22 @@
 {% block title %}Analyzing {{ network.number }} ({{ network.term }}){% endblock %}
 
 {% block content %}
+{% if network.crawl.errors %}
+<div class="row">
+    <div class="col mb-2">
+        <div class="card">
+            <h5 class="card-header">Errors</h5>
+            <ul class="list-group list-group-flush">
+                {% for error in network.crawl.errors %}
+                <li class="list-group-item list-group-item-danger">
+                    {{ error.message }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
 <div class="row">
     <div class="col">
         <div class="card" id="CrawlCard">
@@ -11,6 +27,11 @@
             </h5>
             <div class="card-body">
                 <h4>Create a new analysis</h4>
+                <p>This crawl has <strong>{{ network.crawl.actions | length }}</strong> total actions.
+                {% if network.crawl.num_fully_anon > 0 %}
+                We were unable to crawl {{ network.crawl.num_fully_anon }} actions due to them being posted anonymously to instructors. This means that <strong>we missed about {{ ((network.crawl.num_fully_anon) / (network.crawl.actions | length + network.crawl.num_fully_anon) * 100) | round(1) }}% of all potential actions</strong>.
+                {% endif %}
+                </p>
                 <form method="post">
                     {{ form.hidden_tag() }}
                     <div class="form-group row">
