@@ -2,7 +2,7 @@ from celery.result import AsyncResult
 from datetime import datetime, timedelta
 from enum import IntEnum, auto
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func
+from sqlalchemy import distinct, func
 import mdmm_sampler
 
 db = SQLAlchemy()
@@ -73,6 +73,11 @@ class Crawl(db.Model):
         except:
             pass
         return 0
+
+    def total_users(self):
+        return Action.query.filter_by(crawl=self)\
+                .with_entities(func.count(distinct(Action.uid)))\
+                .scalar()
 
     def increment_fully_anon(self):
         self.num_fully_anon += 1
@@ -487,6 +492,18 @@ class Analysis(db.Model):
         except:
             pass
         return {'sessions': 0, 'sampling': 0}
+
+    def session_length_stats(self):
+        session_lens = Action.query.join(Action, Session.actions)\
+                .filter(Session.analysis_id == self.id)\
+                .with_entities(Session.id,
+                               func.count(Action.id).label('length'))\
+                .group_by(Session.id)\
+                .subquery()
+
+        return db.session.query(
+            func.avg(session_lens.c.length).label('avg'),
+            func.stddev_pop(session_lens.c.length).label('std')).first()
 
     def extract_sessions(self, progress_report):
         actions = Action.query.filter_by(crawl_id=self.crawl_id)
