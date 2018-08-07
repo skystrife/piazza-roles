@@ -26,19 +26,31 @@
                 </div>
             </div>
             {% else %}
-            <div class="card-body">
-                <dl class="row mb-0 mt-1">
-                    <dt class="col-sm-4 m-0">Session gap</dt>
-                    <dd class="col-sm-8 m-0">{{ analysis.session_gap }} hours</dd>
-                    <dt class="col-sm-4 m-0">Number of roles</dt>
-                    <dd class="col-sm-8 m-0">{{ analysis.role_count }}</dd>
-                    <dt class="col-sm-4 m-0">Sampling iterations</dt>
-                    <dd class="col-sm-8 m-0">{{ analysis.max_iterations }}</dd>
-                    <dt class="col-sm-4 m-0">Proportion smoothing</dt>
-                    <dd class="col-sm-8 m-0">{{ analysis.proportion_smoothing }}</dd>
-                    <dt class="col-sm-4 m-0">Role smoothing</dt>
-                    <dd class="col-sm-8 m-0">{{ analysis.role_smoothing }}</dd>
-                </dl>
+            <div class="card-body row">
+                <div class="col-lg-6">
+                    <h5>Analysis parameters</h5>
+                    <dl class="row mb-2 mt-1">
+                        <dt class="col-sm-6 m-0">Session gap</dt>
+                        <dd class="col-sm-6 m-0">{{ analysis.session_gap }} hours</dd>
+                        <dt class="col-sm-6 m-0">Number of roles</dt>
+                        <dd class="col-sm-6 m-0">{{ analysis.role_count }}</dd>
+                        <dt class="col-sm-6 m-0">Sampling iterations</dt>
+                        <dd class="col-sm-6 m-0">{{ analysis.max_iterations }}</dd>
+                        <dt class="col-sm-6 m-0">Proportion smoothing</dt>
+                        <dd class="col-sm-6 m-0">{{ analysis.proportion_smoothing }}</dd>
+                        <dt class="col-sm-6 m-0">Role smoothing</dt>
+                        <dd class="col-sm-6 m-0">{{ analysis.role_smoothing }}</dd>
+                    </dl>
+                </div>
+                <div class="col-lg-6">
+                    <h5>Session statistics</h5>
+                    <dl class="row mb-2 mt-1">
+                        {% for stat in session_stats %}
+                        <dt class="col-sm-7 m-0">{{ stat[0] }}</dt>
+                        <dd class="col-sm-5 m-0">{{ stat[1] | round(2) }}</dd>
+                        {% endfor %}
+                    </dl>
+                </div>
             </div>
             {% endif %}
         </div>
@@ -50,7 +62,10 @@
     {% for role in analysis.roles %}
     <div class="col-12 mb-2">
         <div class="card">
-            <h5 class="card-header">Role {{ loop.index }}</h5>
+            <div class="card-header d-flex justify-content-between">
+                <h5 class="m-0 pt-2">Role {{ loop.index }} <small>({{ ((role.sessions | count) / (analysis.sessions | count) * 100) | round(1) }}% of sessions)</small></h5>
+                <a href="{{ url_for('.role', network_id=network.id, analysis_id=analysis.id, role_num=loop.index) }}" class="btn btn-primary">View details</a>
+            </div>
             <svg class="card-img-top" id="roleChart{{ role.id }}"></svg>
         </div>
     </div>
@@ -62,7 +77,7 @@
 {% block scripts %}
 {% if analysis.finished %}
 <script type="text/javascript">
-    var action_types = {{ action_type_map | tojson | safe}};
+    var action_types = {{ action_type_map | tojson | safe }};
     var roles = {{ role_json | tojson | safe }};
 </script>
 {% endif %}
@@ -71,5 +86,6 @@
 <script src="{{ url_for('static', filename='js/d3.v5.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/d3-scale-chromatic.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/barchart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
 {% endblock %}

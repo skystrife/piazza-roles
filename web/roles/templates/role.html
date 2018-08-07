@@ -1,0 +1,88 @@
+{% extends 'layout.html' %}
+{% block title %}Role {{ role_num }}: Analyzing {{ network.number }} ({{ network.term }}){% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/datatables.min.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-2">
+        <div class="card">
+            <h5 class="card-header">Role {{ role_num }} <small>({{ ((role.sessions | count) / (analysis.sessions | count) * 100) | round(1) }}% of sessions)</small></h5>
+            <svg class="card-img-top" id="roleChart"></svg>
+
+            <div class="card-body">
+                <h4>Top users for this role</h4>
+                <div class="mb-2">
+                    <table class="table table-striped" data-toggle="datatable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>User ID</th>
+                                <th>Estimated probability of this role</th>
+                                <th>Total sessions assigned to this role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for proportion in proportions %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ proportion.uid }}</td>
+                                <td>{{ (proportion.weight * 100) | round(1) }}%</td>
+                                <td>{{ proportion.session_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>Sessions assigned to this role by the sampler</h4>
+
+                <div class="accordion" id="sessionAccordion">
+                    {% for session in role.sessions %}
+                    <div class="card">
+                        <div class="card-header" id="sessionHeading{{ loop.index }}">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#sessionCollapse{{ loop.index }}" aria-expanded="false" aria-controls="sessionCollapse{{ loop.index }}">
+                                    Session {{ loop.index }}
+                                </button>
+                                <small>{{ session.actions | count }} actions</small>
+                            </h5>
+                        </div>
+                        <div id="sessionCollapse{{ loop.index }}" class="collapse" aria-labelledby="sessionHeading{{ loop.index }}" data-parent="#sessionAccordion">
+                            <div class="card-body">
+                                {% for action in session.actions | sort(attribute='time') %}
+                                <button type="button" class="mb-2 btn btn-secondary" data-toggle="collapse" data-target="#action{{ action.id }}" aria-expanded="false" aria-controls="action{{ action.id }}"><small>{{ ActionType(action.type_id).name }}</small></button>
+                                {% endfor %}
+                            </div>
+                            {% for action in session.actions | sort(attribute='time') %}
+                            <div class="collapse" id="action{{ action.id }}">
+                                <div class="card card-body">
+                                    {{ action.content }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+    var action_types = {{ action_type_map | tojson | safe }};
+    var role = {{ role_json | tojson | safe }};
+</script>
+<script src="{{ url_for('static', filename='js/jquery-3.3.1.slim.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/d3.v5.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/d3-scale-chromatic.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/datatables.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/barchart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/role.js') }}"></script>
+{% endblock %}

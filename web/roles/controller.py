@@ -5,9 +5,10 @@ from flask_breadcrumbs import (Breadcrumbs, default_breadcrumb_root,
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import functools
+from operator import attrgetter
 import piazza_api
 import requests
-from operator import attrgetter
+from sqlalchemy import distinct, func
 
 from .forms import *
 from .models import *
@@ -53,6 +54,18 @@ def network_required(view):
             abort(404)
 
         return view(*args, network_id=network_id, **kwargs)
+
+    return wrapped_view
+
+
+def analysis_required(view):
+    @functools.wraps(view)
+    def wrapped_view(analysis_id, *args, **kwargs):
+        g.analysis = Analysis.query.get(analysis_id)
+        if g.analysis is None:
+            abort(404)
+
+        return view(*args, analysis_id=analysis_id, **kwargs)
 
     return wrapped_view
 
@@ -231,12 +244,91 @@ def new_analysis(network_id):
 @bp.route('/class/<network_id>/analysis/<analysis_id>')
 @login_required
 @network_required
+@analysis_required
 @register_breadcrumb(bp, '.classes.network_id.analyze.analysis_id',
                      'View analysis')
 def analysis(network_id, analysis_id):
-    ana = Analysis.query.get(analysis_id)
-    if not ana:
+    view = {
+        'network': g.network,
+        'analysis': g.analysis,
+        'progress': g.analysis.progress(),
+        'total_users': g.network.crawl.total_users()
+    }
+
+    view['action_type_map'] = {
+        int(atype): {
+            'name': atype.name,
+            'description': atype.description()
+        }
+        for atype in ActionType
+    }
+
+    view['role_json'] = None
+    if g.analysis.finished:
+        view['role_json'] = {
+            role.id: [aw.weight for aw in role.weights]
+            for role in g.analysis.roles
+        }
+
+    session_stats = []
+    session_stats.append(('Total actions', len(g.network.crawl.actions)))
+    session_stats.append(('Total sessions', len(g.analysis.sessions)))
+    session_stats.append(('Total users', g.network.crawl.total_users()))
+
+    length_stats = g.analysis.session_length_stats()
+    session_stats.append(('Average session length (actions)',
+                          length_stats.avg))
+    session_stats.append(('Standard deviation (actions)', length_stats.std))
+
+    view['session_stats'] = session_stats
+
+    return render_template('analysis.html', **view)
+
+
+def role_number_dlc(*args, **kwargs):
+    role_num = request.view_args['role_num']
+    return [{
+        'text': "Role {}".format(role_num),
+        'url': url_for('.role', **request.view_args)
+    }]
+
+
+@bp.route('/class/<network_id>/analysis/<analysis_id>/role/<int:role_num>')
+@login_required
+@network_required
+@analysis_required
+@register_breadcrumb(
+    bp,
+    '.classes.network_id.analyze.analysis_id.role_num',
+    '',
+    dynamic_list_constructor=role_number_dlc)
+def role(network_id, analysis_id, role_num):
+    try:
+        role = g.analysis.roles[role_num - 1]
+    except:
         abort(404)
+
+    # This is a bit of a crazy query, but the goal is to get everything
+    # into one list of tuples we can iterate for the user list in the view
+    #
+    # We're grabbing all of the role proportions for this role, then
+    # joining the sessions on the user id, using aggregation to count the
+    # number of sessions, and then getting back tuples of the form
+    # (uid, weight, session_count)
+
+    session_count = func.count(Session.id)
+    proportions = db.session.query(RoleProportion.uid,
+                                   RoleProportion.weight,
+                                   session_count.label('session_count'))\
+                            .filter(RoleProportion.uid == Session.uid)\
+                            .filter(RoleProportion.role_id == Session.role_id)\
+                            .filter(RoleProportion.role_id == role.id)\
+                            .group_by(RoleProportion.uid,
+                                      RoleProportion.weight)\
+                            .order_by(RoleProportion.weight.desc())\
+                            .all()
+
+    role_json = [aw.weight for aw in role.weights]
 
     action_type_map = {
         int(atype): {
@@ -246,17 +338,13 @@ def analysis(network_id, analysis_id):
         for atype in ActionType
     }
 
-    role_json = None
-    if ana.finished:
-        role_json = {
-            role.id: [aw.weight for aw in role.weights]
-            for role in ana.roles
-        }
-
     return render_template(
-        'analysis.html',
+        'role.html',
         network=g.network,
-        analysis=ana,
-        progress=ana.progress(),
+        analysis=g.analysis,
+        role=role,
+        role_num=role_num,
+        proportions=proportions,
+        role_json=role_json,
         action_type_map=action_type_map,
-        role_json=role_json)
+        ActionType=ActionType)
