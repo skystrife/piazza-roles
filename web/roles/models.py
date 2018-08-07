@@ -168,19 +168,20 @@ class CrawlError(db.Model):
     def create_fully_anon(crawl):
         error = CrawlError(
             crawl_id=crawl.id,
-            message=("At least one action was performed while fully "
-                     "anonymous (anonymous to instructors). This makes it "
-                     "impossible to determine which student performed the "
-                     "action, so it cannot be added to a session or be used "
-                     "to determine ownership of content for other dependent "
-                     "actions. This might be OK if only a small portion of "
-                     "the actions were performed this way, but you may want "
-                     "to check the percentage of fully anonymous actions "
-                     "after the crawl has completed to determine whether that "
-                     "percentage of data loss is acceptable to you. To prevent "
-                     "this in the future, you can disable fully anonymous "
-                     "(anonymous to instructors) posting in your Piazza course "
-                     "in the \"Manage Course\" tab on their website."))
+            message=(
+                "At least one action was performed while fully "
+                "anonymous (anonymous to instructors). This makes it "
+                "impossible to determine which student performed the "
+                "action, so it cannot be added to a session or be used "
+                "to determine ownership of content for other dependent "
+                "actions. This might be OK if only a small portion of "
+                "the actions were performed this way, but you may want "
+                "to check the percentage of fully anonymous actions "
+                "after the crawl has completed to determine whether that "
+                "percentage of data loss is acceptable to you. To prevent "
+                "this in the future, you can disable fully anonymous "
+                "(anonymous to instructors) posting in your Piazza course "
+                "in the \"Manage Course\" tab on their website."))
         crawl.errors.append(error)
         db.session.add(error)
         return error
