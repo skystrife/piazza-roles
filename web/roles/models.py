@@ -644,7 +644,7 @@ class Session(db.Model):
             'sessions', lazy=True, cascade='all, delete-orphan'))
     role_id = db.Column(
         db.Integer, db.ForeignKey('role.id'), nullable=True, default=None)
-    role = db.relationship('Role')
+    role = db.relationship('Role', backref=db.backref('sessions', lazy=True))
     actions = db.relationship('Action', secondary=session_action, lazy=False)
 
 
