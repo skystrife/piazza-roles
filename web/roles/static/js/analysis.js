@@ -25,7 +25,8 @@ function BarChart() {
             yScale.domain(data.map(function(d) {
                 return d[1].name;
             }));
-            var height = barheight * yScale.domain().length;
+            var height =
+                barheight * yScale.domain().length + margin.top + margin.bottom;
 
             var svg = d3.select(this)
                           .attr('width', width)
