@@ -28,7 +28,7 @@
                             {% for proportion in proportions %}
                             <tr>
                                 <td>{{ loop.index }}</td>
-                                <td>{{ proportion.uid }}</td>
+                                <td><a href="{{ url_for('.user', network_id=network.id, analysis_id=analysis.id, uid=proportion.uid) }}">{{ proportion.uid }}</a></td>
                                 <td>{{ (proportion.weight * 100) | round(1) }}%</td>
                                 <td>{{ proportion.session_count }}</td>
                             </tr>
@@ -40,14 +40,14 @@
                 <h4>Sessions assigned to this role by the sampler</h4>
 
                 <div class="accordion" id="sessionAccordion">
-                    {% for session in role.sessions %}
+                    {% for session, proportion in sessions %}
                     <div class="card">
                         <div class="card-header" id="sessionHeading{{ loop.index }}">
                             <h5 class="mb-0">
                                 <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#sessionCollapse{{ loop.index }}" aria-expanded="false" aria-controls="sessionCollapse{{ loop.index }}">
                                     Session {{ loop.index }}
                                 </button>
-                                <small>{{ session.uid }} - {{ session.actions | count }} actions</small>
+                                <small>{{ session.actions | count }} actions by <a href="{{ url_for('.user', network_id=network.id, analysis_id=analysis.id, uid=session.uid) }}">{{ session.uid }}</a> who has estimated {{ (proportion.weight * 100) | round(1) }}% probability of this role</small>
                             </h5>
                         </div>
                         <div id="sessionCollapse{{ loop.index }}" class="collapse" aria-labelledby="sessionHeading{{ loop.index }}" data-parent="#sessionAccordion">

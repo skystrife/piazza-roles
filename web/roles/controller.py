@@ -328,6 +328,16 @@ def role(network_id, analysis_id, role_num):
                             .order_by(RoleProportion.weight.desc())\
                             .all()
 
+    sessions = db.session.query(Session, RoleProportion)\
+            .filter(Session.analysis_id == analysis_id)\
+            .filter(Session.role_id == role.id)\
+            .filter(Session.uid == RoleProportion.uid)\
+            .filter(Session.role_id == RoleProportion.role_id)\
+            .order_by(RoleProportion.weight.desc())\
+            .order_by(Session.uid)\
+            .order_by(Session.id)\
+            .all()
+
     role_json = [aw.weight for aw in role.weights]
 
     action_type_map = {
@@ -345,6 +355,7 @@ def role(network_id, analysis_id, role_num):
         role=role,
         role_num=role_num,
         proportions=proportions,
+        sessions=sessions,
         role_json=role_json,
         action_type_map=action_type_map,
         ActionType=ActionType)
