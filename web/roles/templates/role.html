@@ -47,7 +47,7 @@
                                 <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#sessionCollapse{{ loop.index }}" aria-expanded="false" aria-controls="sessionCollapse{{ loop.index }}">
                                     Session {{ loop.index }}
                                 </button>
-                                <small>{{ session.actions | count }} actions</small>
+                                <small>{{ session.uid }} - {{ session.actions | count }} actions</small>
                             </h5>
                         </div>
                         <div id="sessionCollapse{{ loop.index }}" class="collapse" aria-labelledby="sessionHeading{{ loop.index }}" data-parent="#sessionAccordion">
