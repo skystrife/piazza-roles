@@ -62,7 +62,7 @@ def analysis_required(view):
     @functools.wraps(view)
     def wrapped_view(analysis_id, *args, **kwargs):
         g.analysis = Analysis.query.get(analysis_id)
-        if g.analysis is None:
+        if g.analysis is None or not g.analysis.crawl.network == g.network:
             abort(404)
 
         return view(*args, analysis_id=analysis_id, **kwargs)
