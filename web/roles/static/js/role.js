@@ -7,8 +7,7 @@ $(function() {
                        .y(function(d, i) {
                            return action_types[i + 1];
                        })
-                       .margin({top: 30, bottom: 30, right: 30, left: 150})
-                       .extent([0, 0.6]);
+                       .margin({top: 30, bottom: 30, right: 30, left: 150});
 
     d3.select('#roleChart').datum(role).call(barChart);
 

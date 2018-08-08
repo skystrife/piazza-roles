@@ -7,8 +7,7 @@ $(function() {
                        .y(function(d, i) {
                            return {'name': `Role ${i + 1}`, 'description': ''};
                        })
-                       .margin({top: 30, bottom: 30, right: 30, left: 150})
-                       .extent([0, 0.6]);
+                       .margin({top: 30, bottom: 30, right: 30, left: 150});
 
     d3.select('#proportionChart').datum(proportions).call(barChart);
 
