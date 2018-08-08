@@ -348,3 +348,49 @@ def role(network_id, analysis_id, role_num):
         role_json=role_json,
         action_type_map=action_type_map,
         ActionType=ActionType)
+
+
+def uid_dlc(*args, **kwargs):
+    uid = request.view_args['uid']
+    return [{
+        'text': "User {}".format(uid),
+        'url': url_for('.user', **request.view_args)
+    }]
+
+
+@bp.route('/class/<network_id>/analysis/<analysis_id>/user/<uid>')
+@login_required
+@network_required
+@analysis_required
+@register_breadcrumb(
+    bp,
+    '.classes.network_id.analyze.analysis_id.user',
+    '',
+    dynamic_list_constructor=uid_dlc)
+def user(network_id, analysis_id, uid):
+    proportions = RoleProportion.query.filter_by(analysis=g.analysis)\
+            .filter_by(uid=uid)\
+            .order_by(RoleProportion.role_id)
+    proportions = [prop.weight for prop in proportions]
+
+    sessions = Session.query.filter_by(analysis=g.analysis)\
+            .filter_by(uid=uid)\
+            .all()
+
+    role_number = {
+        role.id: g.analysis.roles.index(role) + 1
+        for role in g.analysis.roles
+    }
+
+    if not proportions:
+        abort(404)
+
+    return render_template(
+        'user.html',
+        network=g.network,
+        analysis=g.analysis,
+        uid=uid,
+        proportions=proportions,
+        sessions=sessions,
+        role_number=role_number,
+        ActionType=ActionType)
