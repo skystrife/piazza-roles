@@ -59,7 +59,7 @@
                             {% for action in session.actions | sort(attribute='time') %}
                             <div class="collapse" id="action{{ action.id }}">
                                 <div class="card card-body">
-                                    {{ action.content }}
+                                    {{ action.content | safe }}
                                 </div>
                             </div>
                             {% endfor %}
