@@ -77,8 +77,8 @@ def crawl_course(self, crawl_id, piazza_jar):
     total_posts = len(feed['feed'])
     for idx, feed_item in enumerate(feed['feed']):
         sleep()
-        post = network.get_post(feed_item['id'])
         try:
+            post = network.get_post(feed_item['id'])
             crawl.create_actions_from_post(post)
         except Exception as e:
             msg = traceback.format_exc()
@@ -92,6 +92,8 @@ def crawl_course(self, crawl_id, piazza_jar):
 
     crawl.finished = True
     db.session.commit()
+
+    socketio.emit('finished', {}, namespace='/network', room=crawl.network_id)
 
 
 @celery.task(bind=True)
@@ -109,9 +111,12 @@ def run_analysis(self, analysis_id):
         force = (progress >= 100)
         send_progress({'sessions': progress}, force=force)
 
-    analysis.extract_sessions(progress_report=update_sessions_progress)
-
-    log_likelihood = None
+    def update_training_data_progress(current, total):
+        progress = {
+            'sessions': 100,
+            'training_data': 100 * float(current) / total
+        }
+        send_progress(progress, force=(current == total))
 
     def update_sampler_progress(current_iter,
                                 max_iter,
@@ -120,13 +125,35 @@ def run_analysis(self, analysis_id):
                                 ll=None):
         progress = {
             'sessions': 100,
-            'sampling': 100 * float(current_iter) / max_iter,
-            'iteration': 100 * float(current_assignment) / max_assignments,
-            'log_likelihood': ll
+            'training_data': 100,
+            'sampling': 100 * float(current_iter) / max_iter
         }
         force = (current_iter == max_iter and ll is not None)
         send_progress(progress, force=force)
 
-    analysis.run_sampler(progress_report=update_sampler_progress)
+    def update_saving_progress(current_iter, max_iter):
+        progress = {
+            'sessions': 100,
+            'training_data': 100,
+            'sampling': 100,
+            'saving': 100 * float(current_iter) / max_iter
+        }
+        force = (current_iter == max_iter)
+        send_progress(progress, force=force)
+
+    sessions = analysis.extract_sessions(
+        progress_report=update_sessions_progress)
+
+    training_data = analysis.create_training_data(
+        sessions, progress_report=update_training_data_progress)
+
+    model = analysis.run_sampler(
+        training_data, progress_report=update_sampler_progress)
+
+    analysis.save_sampler_output(
+        sessions, model, progress_report=update_saving_progress)
+
     analysis.finished = True
     db.session.commit()
+
+    socketio.emit('finished', {}, namespace='/analysis', room=analysis_id)

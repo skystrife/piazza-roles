@@ -7,9 +7,15 @@ $(function() {
 
         socket.emit('subscribe', {'id': +network_id});
         socket.on('progress', function(data) {
-            $('#CrawlCard .progress-bar')
+            var bar = $('#crawlProgress')
                 .width(data.progress + '%')
                 .attr('aria-valuenow', data.progress);
+            if (data.progress >= 100)
+                bar.addClass('bg-success');
+        });
+
+        socket.on('finished', function() {
+            $('#viewClassButton').removeClass('invisible');
         });
     });
 });

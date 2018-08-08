@@ -4,7 +4,7 @@
 {% block content %}
 <div class="row">
     <div class="col">
-        <div class="card" id="CrawlCard">
+        <div class="card">
             <h5 class="card-header">
                 {{ network.number }} ({{ network.term }}): {{ network.name }}
             </h5>
@@ -22,10 +22,10 @@
                 </h5>
 
                 <div class="progress mb-2">
-                    <div class="progress-bar" role="progressbar" style="width: {{ network.crawl.progress() }}%;" aria-valuenow="{{ network.crawl.progress() }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div id="crawlProgress" class="progress-bar" role="progressbar" style="width: {{ network.crawl.progress() }}%;" aria-valuenow="{{ network.crawl.progress() }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
 
-                <div id="CrawlErrors">
+                <div>
                     {% if network.crawl.errors %}
                     <p class="card-text">
                         {% if network.crawl.errors | length == 1 %}
@@ -41,7 +41,9 @@
                     {% endfor %}
                     {% endif %}
                 </div>
-                {% if network.crawl.finished %}
+                {% if not network.crawl.finished %}
+                <a id="viewClassButton" href="{{ url_for('.view_class', network_id=network.id) }}" class="btn btn-success invisible">View class</a>
+                {% else %}
                 <p class="card-text">If you would like to retry the crawl, click the "Restart crawl" button below.</p>
                 <p class="card-text"><strong>This will delete all analyses for this network!</strong>
                 {% if network.crawl.analyses | count == 1 %}

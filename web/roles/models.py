@@ -483,15 +483,16 @@ class Analysis(db.Model):
     task_id = db.Column(db.String(120), index=True)
 
     def progress(self):
+        keys = ['sessions', 'training_data', 'sampling', 'saving']
         if self.finished:
-            return {'sessions': 100, 'sampling': 100}
+            return {key: 100 for key in keys}
         try:
             result = AsyncResult(self.task_id)
             if result.state == 'PROGRESS':
                 return result.info
         except:
             pass
-        return {'sessions': 0, 'sampling': 0}
+        return {key: 0 for key in keys}
 
     def session_length_stats(self):
         session_lens = Action.query.join(Action, Session.actions)\
@@ -541,10 +542,8 @@ class Analysis(db.Model):
 
         current = add_and_report(session)
         db.session.commit()
-        return current
 
-    def run_sampler(self, progress_report):
-        # Get ordered sessions by time
+        # Get ordered sessions by time for each user
         sessions = Action.query.join(Action, Session.actions)\
                 .filter(Session.analysis_id == self.id)\
                 .with_entities(func.min(Action.time).label('start_time'),
@@ -553,10 +552,16 @@ class Analysis(db.Model):
                 .order_by(Session.uid)\
                 .order_by('start_time').all()
 
+        return sessions
+
+    def create_training_data(self, sessions, progress_report):
         training_data = []
         user_sessions = []
         current_user = None
-        for session in sessions:
+        total_sessions = len(sessions)
+        for idx, session in enumerate(sessions):
+            progress_report(idx, total_sessions)
+
             if current_user != session.uid:
                 if user_sessions:
                     training_data.append(user_sessions)
@@ -579,18 +584,28 @@ class Analysis(db.Model):
         if user_sessions:
             training_data.append(user_sessions)
 
+        return training_data
+
+    def run_sampler(self, training_data, progress_report):
         options = mdmm_sampler.MDMM.Options(
             num_topics=self.role_count,
             num_actions=len(ActionType),
             alpha=self.proportion_smoothing,
             beta=self.role_smoothing)
+
         rng = mdmm_sampler.random.Xoroshiro128(47)
         sampler = mdmm_sampler.MDMM(training_data, options, rng)
+
         sampler.run(training_data, self.max_iterations, rng, progress_report)
 
+        return sampler
+
+    def save_sampler_output(self, sessions, sampler, progress_report):
+        total_iters = self.role_count - 1 + len(sessions) - 1
         # Create the roles
         roles = []
         for role_num in range(0, self.role_count):
+            progress_report(role_num, total_iters)
             role = Role(analysis=self)
             roles.append(role)
             db.session.add(role)
@@ -612,6 +627,7 @@ class Analysis(db.Model):
         user_id = -1
         current_user = None
         for idx, sess in enumerate(sessions):
+            progress_report(self.role_count + idx, total_iters)
             if current_user != sess.uid:
                 user_id += 1
                 current_user = sess.uid

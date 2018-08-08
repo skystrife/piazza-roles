@@ -45,3 +45,5 @@ def analysis_subscribe(data):
 
     join_room(analysis_id)
     emit('progress', ana.progress(), room=analysis_id)
+    if ana.finished:
+        emit('finished', room=analysis_id)

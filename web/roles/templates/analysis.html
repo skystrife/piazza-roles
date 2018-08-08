@@ -8,14 +8,19 @@
             <h5 class="card-header">
                 {{ network.number }} ({{ network.term }}): {{ network.name }} - Analysis {{ analysis.id }}
             </h5>
-
             {% if not analysis.finished %}
             <div class="card-body">
                 <h5 class="card-title">An analysis is in progress.</h5>
                 <div class="form-group">
                     <label>Session extraction</label>
                     <div class="progress">
-                        <div id='sessionProgress' class="progress-bar" role="progressbar" style="width: {{ progress['sessions'] }}%;" aria-valuenow="{{ progress['sessions'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div id='sessionsProgress' class="progress-bar" role="progressbar" style="width: {{ progress['sessions'] }}%;" aria-valuenow="{{ progress['sessions'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Training data construction</label>
+                    <div class="progress">
+                        <div id='training_dataProgress' class="progress-bar" role="progressbar" style="width: {{ progress['training_data'] }}%;" aria-valuenow="{{ progress['training_data'] }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -24,6 +29,13 @@
                         <div id='samplingProgress' class="progress-bar" role="progressbar" style="width: {{ progress['sampling'] }}%;" aria-valuenow="{{ progress['sampling'] }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Saving results</label>
+                    <div class="progress">
+                        <div id='savingProgress' class="progress-bar" role="progressbar" style="width: {{ progress['saving'] }}%;" aria-valuenow="{{ progress['saving'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <a id="viewAnalysisButton" href="{{ url_for('.analysis', network_id=network.id, analysis_id=analysis.id) }}" class="btn btn-success invisible">View analysis</a>
             </div>
             {% else %}
             <div class="card-body row">
