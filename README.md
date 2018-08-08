@@ -13,4 +13,7 @@ sudo docker-compose build
 
 # Run with:
 sudo docker-compose up
+
+# Bootstrap the db while the app is running with:
+sudo docker-compose exec web pipenv run flask db upgrade
 ```
