@@ -53,7 +53,9 @@
                         <div id="sessionCollapse{{ loop.index }}" class="collapse" aria-labelledby="sessionHeading{{ loop.index }}" data-parent="#sessionAccordion">
                             <div class="card-body">
                                 {% for action in session.actions | sort(attribute='time') %}
-                                <button type="button" class="mb-2 btn btn-secondary" data-toggle="collapse" data-target="#action{{ action.id }}" aria-expanded="false" aria-controls="action{{ action.id }}"><small>{{ ActionType(action.type_id).name }}</small></button>
+                                <span data-toggle="tooltip" data-placement="top" title="{{ action.action_type().description() }}">
+                                    <button type="button" class="mb-2 btn btn-secondary btn-sm" data-toggle="collapse" data-target="#action{{ action.id }}" aria-expanded="false" aria-controls="action{{ action.id }}"><small>{{ action.action_type().name }}</small></button>
+                                </span>
                                 {% endfor %}
                             </div>
                             {% for action in session.actions | sort(attribute='time') %}
