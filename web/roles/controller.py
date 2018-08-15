@@ -105,12 +105,18 @@ def login():
         classes = g.piazza.get_user_classes()
         for cls in (cls for cls in classes if cls['is_ta']):
             net = Network.query.filter_by(nid=cls['nid']).first()
+
+            # create the class if it doesn't already exist
             if net is None:
                 net = Network(
                     nid=cls['nid'],
                     number=cls['num'],
                     name=cls['name'],
                     term=cls['term'])
+
+            # add the current user to the class if they aren't already a
+            # member
+            if user not in net.users:
                 net.users.append(user)
                 db.session.add(net)
 
